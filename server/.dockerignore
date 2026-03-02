@@ -1,0 +1,14 @@
+__pycache__
+*.pyc
+*.pyo
+*.pyd
+.Python
+env/
+venv/
+.venv/
+lexilearn.db
+.env
+.git
+.vscode
+.idea
+*.log
