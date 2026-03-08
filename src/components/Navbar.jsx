@@ -62,7 +62,7 @@ export default function Navbar() {
           className="flex items-center gap-2 text-primary font-bold text-xl"
         >
           <img
-            src="/transparent bg logo (2).png"
+            src="/logo.png"
             alt="LexiLearn Logo"
             className="w-10 h-10 object-contain"
           />
