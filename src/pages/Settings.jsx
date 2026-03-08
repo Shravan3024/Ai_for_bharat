@@ -11,6 +11,7 @@ import {
   Mail,
   GraduationCap,
   Shield,
+  BookOpen,
 } from "lucide-react";
 
 export default function Settings() {
@@ -24,6 +25,8 @@ export default function Settings() {
     setReadingPace,
     audioEnabled,
     toggleAudio,
+    dyslexicFont,
+    toggleDyslexicFont,
   } = useAccessibilityStore();
 
   return (
@@ -44,11 +47,11 @@ export default function Settings() {
           <div className="space-y-4">
             <div className="flex items-center gap-4">
               <div className="w-16 h-16 rounded-full bg-primary/10 flex items-center justify-center text-2xl font-bold text-primary">
-                {user?.name?.charAt(0) || "?"}
+                {user?.full_name?.charAt(0)?.toUpperCase() || user?.email?.charAt(0)?.toUpperCase() || "?"}
               </div>
               <div>
                 <p className="text-lg font-semibold text-text">
-                  {user?.name || "Guest"}
+                  {user?.full_name || user?.email?.split("@")[0] || "Guest"}
                 </p>
                 <p className="text-sm text-text-secondary flex items-center gap-1">
                   <Mail className="w-3.5 h-3.5" />
@@ -136,29 +139,56 @@ export default function Settings() {
               </button>
             </div>
 
-            {/* Audio */}
-            <div className="flex items-center justify-between">
-              <div>
-                <p className="font-medium text-text">Audio (Text-to-Speech)</p>
-                <p className="text-sm text-text-muted">
-                  Enable listen mode for reading texts aloud
-                </p>
-              </div>
-              <button
-                onClick={toggleAudio}
-                className={`relative w-14 h-8 rounded-full transition-colors ${
-                  audioEnabled ? "bg-success" : "bg-border"
-                }`}
-                role="switch"
-                aria-checked={audioEnabled}
-              >
-                <span
-                  className={`absolute top-1 w-6 h-6 rounded-full bg-white shadow transition-transform ${
-                    audioEnabled ? "translate-x-7" : "translate-x-1"
+              {/* Audio */}
+              <div className="flex items-center justify-between">
+                <div>
+                  <p className="font-medium text-text">Audio (Text-to-Speech)</p>
+                  <p className="text-sm text-text-muted">
+                    Enable listen mode for reading texts aloud
+                  </p>
+                </div>
+                <button
+                  onClick={toggleAudio}
+                  className={`relative w-14 h-8 rounded-full transition-colors ${
+                    audioEnabled ? "bg-success" : "bg-border"
                   }`}
-                />
-              </button>
-            </div>
+                  role="switch"
+                  aria-checked={audioEnabled}
+                >
+                  <span
+                    className={`absolute top-1 w-6 h-6 rounded-full bg-white shadow transition-transform ${
+                      audioEnabled ? "translate-x-7" : "translate-x-1"
+                    }`}
+                  />
+                </button>
+              </div>
+
+              {/* OpenDyslexic Font */}
+              <div className="flex items-center justify-between">
+                <div>
+                  <p className="font-medium text-text flex items-center gap-2">
+                    <BookOpen className="w-4 h-4 text-secondary" />
+                    OpenDyslexic Font
+                  </p>
+                  <p className="text-sm text-text-muted">
+                    Switches all text to the OpenDyslexic typeface, designed to reduce reading errors
+                  </p>
+                </div>
+                <button
+                  onClick={toggleDyslexicFont}
+                  className={`relative w-14 h-8 rounded-full transition-colors ${
+                    dyslexicFont ? "bg-secondary" : "bg-border"
+                  }`}
+                  role="switch"
+                  aria-checked={dyslexicFont}
+                >
+                  <span
+                    className={`absolute top-1 w-6 h-6 rounded-full bg-white shadow transition-transform ${
+                      dyslexicFont ? "translate-x-7" : "translate-x-1"
+                    }`}
+                  />
+                </button>
+              </div>
 
             {/* Reading Pace */}
             <div>

@@ -130,10 +130,6 @@ LexiLearn is a comprehensive full-stack education platform designed to support s
   
   This project is licensed under the MIT License - see the [LICENSE](LICENSE) file for details.
   
-  ## 👥 Authors
-  
-  - **Rushikesh Bobade** - *Project Lead & Lead Developer* - [GitHub](https://github.com/rushikesh-bobade)
-  
   ## 🙏 Acknowledgments
   
   - Amazon Bedrock and Google Gemini for powering the intelligence layer.

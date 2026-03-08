@@ -49,8 +49,13 @@ export default function Login() {
   const [selectedRole, setSelectedRole] = useState(null);
   const [isRegister, setIsRegister] = useState(false);
   const [showPassword, setShowPassword] = useState(false);
-  const [form, setForm] = useState({ name: "", email: "", password: "" });
+  const [form, setForm] = useState({ name: "", email: "", password: "", code: "" });
   const [error, setError] = useState("");
+  const [needsConfirmation, setNeedsConfirmation] = useState(false);
+  const [registeredEmail, setRegisteredEmail] = useState("");
+  const [registeredRole, setRegisteredRole] = useState("");
+  const [registeredName, setRegisteredName] = useState("");
+  const [registeredPassword, setRegisteredPassword] = useState("");
 
   const handleSubmit = async (e) => {
     e.preventDefault();
@@ -73,20 +78,40 @@ export default function Login() {
 
     try {
       const roleInfo = roles.find((r) => r.key === selectedRole);
+      
+      if (needsConfirmation) {
+         await useAuthStore.getState().confirmRegistration(registeredEmail, form.code, registeredRole, registeredName);
+         // Log in using the password saved during registration
+         await login(registeredRole, registeredEmail, registeredPassword);
+         navigate(roleInfo.redirect);
+         return;
+      }
+
       if (isRegister) {
-        await register(selectedRole, {
+        const result = await register(selectedRole, {
           full_name: form.name,
           email: form.email,
           password: form.password,
         });
-        // After register, auto-login
+        
+        if (result && !result.userConfirmed) {
+            setNeedsConfirmation(true);
+            setRegisteredEmail(result.email);
+            setRegisteredRole(result.role);
+            setRegisteredName(result.name);
+            setRegisteredPassword(form.password); // Store for auto-login after confirm
+            setError(""); // clear errors
+            return;
+        }
+
+        // If auto-confirmed somehow, just login
         await login(selectedRole, form.email, form.password);
       } else {
         await login(selectedRole, form.email, form.password);
       }
       navigate(roleInfo.redirect);
     } catch (err) {
-      setError(err.message || "Login failed. Please try again.");
+      setError(err.message || "Action failed. Please try again.");
     }
   };
 
@@ -124,16 +149,19 @@ export default function Login() {
               LexiLearn
             </Link>
             <h1 className="text-2xl font-bold text-text mt-4">
-              {isRegister ? "Create Your Account" : "Welcome Back"}
+              {needsConfirmation ? "Verify Your Email" : (isRegister ? "Create Your Account" : "Welcome Back")}
             </h1>
             <p className="text-text-secondary mt-1">
-              {isRegister
+              {needsConfirmation
+                ? "We sent a code to your email."
+                : (isRegister
                 ? "Join the LexiLearn community"
-                : "Choose your role and sign in"}
+                : "Choose your role and sign in")}
             </p>
           </div>
 
-          {/* Role Selection */}
+          {/* Role Selection (Hide if confirming) */}
+          {!needsConfirmation && (
           <div className="grid grid-cols-3 gap-3 mb-6">
             {roles.map((r) => (
               <button
@@ -163,6 +191,7 @@ export default function Login() {
               </button>
             ))}
           </div>
+          )}
 
           {/* Form */}
           <form
@@ -175,60 +204,77 @@ export default function Login() {
               </div>
             )}
 
-            {isRegister && (
+            {needsConfirmation ? (
               <div>
                 <label className="block text-sm font-medium text-text mb-1.5">
-                  Full Name
+                  Verification Code
                 </label>
                 <input
                   type="text"
-                  value={form.name}
-                  onChange={(e) => updateField("name", e.target.value)}
-                  placeholder="Enter your name"
-                  className="w-full px-4 py-3 rounded-xl border border-border bg-surface-dim text-text placeholder:text-text-muted focus:outline-none focus:ring-2 focus:ring-primary/30 focus:border-primary transition-colors"
+                  value={form.code}
+                  onChange={(e) => updateField("code", e.target.value)}
+                  placeholder="Enter 6-digit code"
+                  className="w-full px-4 py-3 rounded-xl border border-border bg-surface-dim text-text placeholder:text-text-muted focus:outline-none focus:ring-2 focus:ring-primary/30 focus:border-primary transition-colors tracking-widest text-center text-lg"
                 />
               </div>
+            ) : (
+             <>
+                {isRegister && (
+                  <div>
+                    <label className="block text-sm font-medium text-text mb-1.5">
+                      Full Name
+                    </label>
+                    <input
+                      type="text"
+                      value={form.name}
+                      onChange={(e) => updateField("name", e.target.value)}
+                      placeholder="Enter your name"
+                      className="w-full px-4 py-3 rounded-xl border border-border bg-surface-dim text-text placeholder:text-text-muted focus:outline-none focus:ring-2 focus:ring-primary/30 focus:border-primary transition-colors"
+                    />
+                  </div>
+                )}
+
+                <div>
+                  <label className="block text-sm font-medium text-text mb-1.5">
+                    Email
+                  </label>
+                  <input
+                    type="email"
+                    value={form.email}
+                    onChange={(e) => updateField("email", e.target.value)}
+                    placeholder="your@email.com"
+                    className="w-full px-4 py-3 rounded-xl border border-border bg-surface-dim text-text placeholder:text-text-muted focus:outline-none focus:ring-2 focus:ring-primary/30 focus:border-primary transition-colors"
+                  />
+                </div>
+
+                <div>
+                  <label className="block text-sm font-medium text-text mb-1.5">
+                    Password
+                  </label>
+                  <div className="relative">
+                    <input
+                      type={showPassword ? "text" : "password"}
+                      value={form.password}
+                      onChange={(e) => updateField("password", e.target.value)}
+                      placeholder="Enter password"
+                      className="w-full px-4 py-3 rounded-xl border border-border bg-surface-dim text-text placeholder:text-text-muted focus:outline-none focus:ring-2 focus:ring-primary/30 focus:border-primary transition-colors pr-12"
+                    />
+                    <button
+                      type="button"
+                      onClick={() => setShowPassword(!showPassword)}
+                      className="absolute right-3 top-1/2 -translate-y-1/2 text-text-muted hover:text-text transition-colors"
+                      aria-label={showPassword ? "Hide password" : "Show password"}
+                    >
+                      {showPassword ? (
+                        <EyeOff className="w-5 h-5" />
+                      ) : (
+                        <Eye className="w-5 h-5" />
+                      )}
+                    </button>
+                  </div>
+                </div>
+              </>
             )}
-
-            <div>
-              <label className="block text-sm font-medium text-text mb-1.5">
-                Email
-              </label>
-              <input
-                type="email"
-                value={form.email}
-                onChange={(e) => updateField("email", e.target.value)}
-                placeholder="your@email.com"
-                className="w-full px-4 py-3 rounded-xl border border-border bg-surface-dim text-text placeholder:text-text-muted focus:outline-none focus:ring-2 focus:ring-primary/30 focus:border-primary transition-colors"
-              />
-            </div>
-
-            <div>
-              <label className="block text-sm font-medium text-text mb-1.5">
-                Password
-              </label>
-              <div className="relative">
-                <input
-                  type={showPassword ? "text" : "password"}
-                  value={form.password}
-                  onChange={(e) => updateField("password", e.target.value)}
-                  placeholder="Enter password"
-                  className="w-full px-4 py-3 rounded-xl border border-border bg-surface-dim text-text placeholder:text-text-muted focus:outline-none focus:ring-2 focus:ring-primary/30 focus:border-primary transition-colors pr-12"
-                />
-                <button
-                  type="button"
-                  onClick={() => setShowPassword(!showPassword)}
-                  className="absolute right-3 top-1/2 -translate-y-1/2 text-text-muted hover:text-text transition-colors"
-                  aria-label={showPassword ? "Hide password" : "Show password"}
-                >
-                  {showPassword ? (
-                    <EyeOff className="w-5 h-5" />
-                  ) : (
-                    <Eye className="w-5 h-5" />
-                  )}
-                </button>
-              </div>
-            </div>
 
             <button
               type="submit"
@@ -238,11 +284,27 @@ export default function Login() {
               {isLoading && <Loader2 className="w-5 h-5 animate-spin" />}
               {isLoading
                 ? "Please wait..."
+                : needsConfirmation 
+                ? "Verify & Sign In"
                 : isRegister
                 ? "Create Account"
                 : "Sign In"}
             </button>
 
+            {needsConfirmation && (
+               <div className="text-center mt-2">
+                 <button
+                   type="button"
+                   onClick={() => useAuthStore.getState().resendConfirmationCode(registeredEmail)}
+                   className="text-sm text-primary font-medium hover:underline"
+                   disabled={isLoading}
+                 >
+                   Didn't get the code? Resend it.
+                 </button>
+               </div>
+            )}
+
+            {!needsConfirmation && (
             <p className="text-center text-sm text-text-secondary">
               {isRegister ? "Already have an account?" : "Don't have an account?"}{" "}
               <button
@@ -256,6 +318,7 @@ export default function Login() {
                 {isRegister ? "Sign In" : "Register"}
               </button>
             </p>
+            )}
           </form>
 
           {/* Demo hint */}

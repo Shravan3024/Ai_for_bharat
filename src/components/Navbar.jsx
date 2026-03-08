@@ -12,8 +12,15 @@ import {
   Type,
   Volume2,
   VolumeX,
-  Gauge,
+  Bot,
+  User,
 } from "lucide-react";
+
+const ROLE_BADGE = {
+  student: { label: "Student", cls: "bg-primary/10 text-primary" },
+  teacher: { label: "Teacher", cls: "bg-secondary/10 text-secondary" },
+  parent: { label: "Parent", cls: "bg-success/10 text-success" },
+};
 
 export default function Navbar() {
   const { user, isAuthenticated, logout } = useAuthStore();
@@ -24,6 +31,8 @@ export default function Navbar() {
     toggleHighContrast,
     audioEnabled,
     toggleAudio,
+    dyslexicFont,
+    toggleDyslexicFont,
   } = useAccessibilityStore();
 
   const [mobileOpen, setMobileOpen] = useState(false);
@@ -41,6 +50,8 @@ export default function Navbar() {
       : user?.role === "parent"
       ? "/parent"
       : "/student";
+
+  const badge = user?.role ? ROLE_BADGE[user.role] : null;
 
   return (
     <nav className="bg-surface border-b border-border sticky top-0 z-50">
@@ -70,32 +81,52 @@ export default function Navbar() {
             Aa
           </button>
 
-            {isAuthenticated ? (
-              <>
+          {isAuthenticated ? (
+            <>
+              <Link
+                to={dashboardPath}
+                className="px-3 py-2 rounded-lg text-text-secondary hover:bg-cream transition-colors text-sm font-medium"
+              >
+                Dashboard
+              </Link>
+              {user?.role === "student" && (
                 <Link
-                  to={dashboardPath}
-                  className="px-3 py-2 rounded-lg text-text-secondary hover:bg-cream transition-colors text-sm font-medium"
+                  to="/chat"
+                  className="flex items-center gap-1 px-3 py-2 rounded-lg text-text-secondary hover:bg-cream transition-colors text-sm font-medium"
                 >
-                  Dashboard
+                  <Bot className="w-4 h-4" />
+                  LexiBot
                 </Link>
-                <Link
-                  to="/settings"
-                  className="px-3 py-2 rounded-lg text-text-secondary hover:bg-cream transition-colors text-sm font-medium"
-                >
-                  Settings
-                </Link>
-                  <span className="text-sm text-text-secondary">
-                    Hi, {user?.full_name?.split(" ")[0]}
+              )}
+              <Link
+                to="/settings"
+                className="px-3 py-2 rounded-lg text-text-secondary hover:bg-cream transition-colors text-sm font-medium"
+              >
+                Settings
+              </Link>
+              {/* User info + role badge */}
+              <div className="flex items-center gap-2 px-3 py-1.5 rounded-lg bg-surface-dim border border-border">
+                <div className="w-7 h-7 rounded-full bg-primary/10 flex items-center justify-center text-xs font-bold text-primary">
+                  {user?.full_name?.charAt(0)?.toUpperCase() || user?.email?.charAt(0)?.toUpperCase() || "?"}
+                </div>
+                <span className="text-sm font-medium text-text">
+                  {user?.full_name?.split(" ")[0] || user?.email?.split("@")[0]}
+                </span>
+                {badge && (
+                  <span className={`text-xs font-semibold px-2 py-0.5 rounded-full ${badge.cls}`}>
+                    {badge.label}
                   </span>
-                <button
-                  onClick={handleLogout}
-                  className="flex items-center gap-1 px-4 py-2 rounded-lg bg-error/10 text-error hover:bg-error/20 transition-colors text-sm font-medium"
-                >
-                  <LogOut className="w-4 h-4" />
-                  Logout
-                </button>
-              </>
-            ) : (
+                )}
+              </div>
+              <button
+                onClick={handleLogout}
+                className="flex items-center gap-1 px-4 py-2 rounded-lg bg-error/10 text-error hover:bg-error/20 transition-colors text-sm font-medium"
+              >
+                <LogOut className="w-4 h-4" />
+                Logout
+              </button>
+            </>
+          ) : (
             <>
               <Link
                 to="/#features"
@@ -188,6 +219,20 @@ export default function Navbar() {
               )}
               Audio {audioEnabled ? "On" : "Off"}
             </button>
+
+            {/* OpenDyslexic */}
+            <button
+              onClick={toggleDyslexicFont}
+              className={`flex items-center gap-2 px-3 py-1.5 rounded-lg border transition-colors ${
+                dyslexicFont
+                  ? "bg-secondary/10 border-secondary/30 text-secondary"
+                  : "bg-surface border-border text-text-secondary"
+              }`}
+              title="Toggle OpenDyslexic font"
+            >
+              <Type className="w-4 h-4" />
+              {dyslexicFont ? "OpenDyslexic" : "Default Font"}
+            </button>
           </div>
         </div>
       )}
@@ -195,33 +240,54 @@ export default function Navbar() {
       {/* Mobile Menu */}
       {mobileOpen && (
         <div className="md:hidden border-t border-border bg-surface px-6 py-4 space-y-3">
-            {isAuthenticated ? (
-              <>
+          {isAuthenticated ? (
+            <>
+              {user && (
+                <div className="flex items-center gap-2 pb-2 border-b border-border">
+                  <div className="w-8 h-8 rounded-full bg-primary/10 flex items-center justify-center text-sm font-bold text-primary">
+                    {user?.full_name?.charAt(0)?.toUpperCase() || "?"}
+                  </div>
+                  <div>
+                    <p className="text-sm font-semibold text-text">{user?.full_name?.split(" ")[0]}</p>
+                    {badge && <span className={`text-xs font-medium px-1.5 py-0.5 rounded-full ${badge.cls}`}>{badge.label}</span>}
+                  </div>
+                </div>
+              )}
+              <Link
+                to={dashboardPath}
+                onClick={() => setMobileOpen(false)}
+                className="block px-3 py-2 rounded-lg hover:bg-cream transition-colors font-medium"
+              >
+                Dashboard
+              </Link>
+              {user?.role === "student" && (
                 <Link
-                  to={dashboardPath}
+                  to="/chat"
                   onClick={() => setMobileOpen(false)}
-                  className="block px-3 py-2 rounded-lg hover:bg-cream transition-colors font-medium"
+                  className="flex items-center gap-2 px-3 py-2 rounded-lg hover:bg-cream transition-colors font-medium"
                 >
-                  Dashboard
+                  <Bot className="w-4 h-4" />
+                  LexiBot
                 </Link>
-                <Link
-                  to="/settings"
-                  onClick={() => setMobileOpen(false)}
-                  className="block px-3 py-2 rounded-lg hover:bg-cream transition-colors font-medium"
-                >
-                  Settings
-                </Link>
-                <button
-                  onClick={() => {
-                    handleLogout();
-                    setMobileOpen(false);
-                  }}
-                  className="w-full text-left px-3 py-2 rounded-lg text-error hover:bg-error/10 transition-colors font-medium"
-                >
-                  Logout
-                </button>
-              </>
-            ) : (
+              )}
+              <Link
+                to="/settings"
+                onClick={() => setMobileOpen(false)}
+                className="block px-3 py-2 rounded-lg hover:bg-cream transition-colors font-medium"
+              >
+                Settings
+              </Link>
+              <button
+                onClick={() => {
+                  handleLogout();
+                  setMobileOpen(false);
+                }}
+                className="w-full text-left px-3 py-2 rounded-lg text-error hover:bg-error/10 transition-colors font-medium"
+              >
+                Logout
+              </button>
+            </>
+          ) : (
             <>
               <Link
                 to="/login"
