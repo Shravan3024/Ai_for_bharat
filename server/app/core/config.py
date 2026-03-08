@@ -51,6 +51,7 @@ class Settings(BaseSettings):
             "http://127.0.0.1:5174",
             "http://localhost:3000",
             "https://main.d2z7vfqfduv71z.amplifyapp.com",
+            "https://d9npieqx6bm8a.cloudfront.net",
         ]
         if self.FRONTEND_URL:
             # Support comma-separated list: "https://x.amplifyapp.com,https://custom.com"
