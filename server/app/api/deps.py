@@ -29,11 +29,10 @@ def get_current_user(
             email, name, role = info
             user = db.query(models.User).filter(models.User.email == email).first()
             if not user:
-                from app.core.security import get_password_hash
                 user = models.User(
                     email=email,
                     full_name=name,
-                    hashed_password=get_password_hash("demo123"),
+                    hashed_password="dummy_hash_for_demo_user",
                     role=role,
                     is_active=True,
                 )
