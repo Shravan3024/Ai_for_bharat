@@ -75,3 +75,6 @@ desktop.ini
 AWS_DEPLOYMENT_GUIDE.md
 DYSLEXIA_AWS_ARCHITECTURE.md
 lexilearn-complete-rebuild.md
+
+tmp_*
+*.pyc
