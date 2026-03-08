@@ -321,10 +321,31 @@ export default function Login() {
             )}
           </form>
 
-          {/* Demo hint */}
-          <p className="text-center text-xs text-text-muted mt-4">
-            Demo: Use any email/password. Select a role and click Sign In.
-          </p>
+          {/* Quick Demo Access for Judges */}
+          <div className="mt-6 p-4 bg-surface rounded-2xl shadow-card border border-border">
+            <p className="text-center text-sm font-semibold text-text mb-3">
+              ⚡ Quick Demo Access (No Account Needed)
+            </p>
+            <div className="grid grid-cols-3 gap-2">
+              {roles.map((r) => (
+                <button
+                  key={`demo-${r.key}`}
+                  onClick={() => {
+                    const { demoLogin } = useAuthStore.getState();
+                    demoLogin(r.key);
+                    navigate(r.redirect);
+                  }}
+                  className={`py-2 px-3 rounded-xl ${r.bg} border border-border text-sm font-medium text-text hover:shadow-card transition-all flex items-center justify-center gap-1.5`}
+                >
+                  <r.icon className="w-4 h-4" />
+                  {r.label}
+                </button>
+              ))}
+            </div>
+            <p className="text-center text-xs text-text-muted mt-2">
+              Click any role above to explore the dashboard instantly
+            </p>
+          </div>
         </div>
       </div>
     </div>
