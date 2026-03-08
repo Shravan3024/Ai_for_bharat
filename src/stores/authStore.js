@@ -163,7 +163,21 @@ export const useAuthStore = create((set) => ({
         localStorage.removeItem("lexilearn_token");
         localStorage.removeItem("lexilearn_user");
       }
-    }
+    },
+
+    // Demo login — bypasses Cognito for hackathon judges
+    demoLogin: (role) => {
+      const demoUsers = {
+        student: { id: "demo-s1", full_name: "Aditi Sharma", email: "aditi@demo.com", role: "student" },
+        teacher: { id: "demo-t1", full_name: "Mrs. Sharma", email: "sharma@demo.com", role: "teacher" },
+        parent:  { id: "demo-p1", full_name: "Priya Sharma", email: "priya@demo.com", role: "parent" },
+      };
+      const user = demoUsers[role];
+      localStorage.setItem("lexilearn_token", "demo-token-" + role);
+      localStorage.setItem("lexilearn_user", JSON.stringify(user));
+      set({ user, isAuthenticated: true, isLoading: false, error: null });
+      return user;
+    },
 }));
 
 export const useAccessibilityStore = create((set) => ({
