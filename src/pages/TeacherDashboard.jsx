@@ -1,11 +1,6 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { useAuthStore } from "../stores/authStore";
-import {
-  mockStudents,
-  mockAssignments,
-  mockWeeklyProgress,
-  mockMonthlyProgress,
-} from "../data/mockData";
+import { apiService } from "../services/apiService";
 import Navbar from "../components/Navbar";
 import {
   Users,
@@ -43,6 +38,26 @@ export default function TeacherDashboard() {
   const { user } = useAuthStore();
   const [activeTab, setActiveTab] = useState("overview");
   const [selectedStudent, setSelectedStudent] = useState(null);
+  
+  const [demoData, setDemoData] = useState({
+    students: [],
+    assignments: [],
+    monthlyProgress: [],
+    messages: []
+  });
+  const [loading, setLoading] = useState(true);
+
+  useEffect(() => {
+    async function fetchData() {
+      setLoading(true);
+      const data = await apiService.getTeacherDemoData();
+      if (data && !data.error) {
+        setDemoData(data);
+      }
+      setLoading(false);
+    }
+    fetchData();
+  }, []);
 
   const tabs = [
     { key: "overview", label: "Overview", icon: BarChart3 },
@@ -51,9 +66,17 @@ export default function TeacherDashboard() {
     { key: "messages", label: "Messages", icon: MessageCircle },
   ];
 
-  const atRiskStudents = mockStudents.filter(
+  const atRiskStudents = demoData.students.filter(
     (s) => s.trend === "needs-support"
   );
+
+  if (loading) {
+    return (
+      <div className="min-h-screen bg-cream flex items-center justify-center">
+        <p className="text-text-secondary font-medium">Loading teacher dashboard...</p>
+      </div>
+    );
+  }
 
   return (
     <div className="min-h-screen bg-cream">
@@ -62,7 +85,7 @@ export default function TeacherDashboard() {
         {/* Greeting */}
         <div className="mb-6">
           <h1 className="text-3xl font-bold text-text">
-            Hello, {user?.name || "Teacher"}
+            Hello, {user?.full_name?.split(" ")[0] || "Teacher"}
           </h1>
           <p className="text-text-secondary mt-1">
             {user?.classes?.join(", ") || "Your class overview"}
@@ -91,23 +114,25 @@ export default function TeacherDashboard() {
         </div>
 
         {activeTab === "overview" && (
-          <OverviewTab atRiskStudents={atRiskStudents} />
+          <OverviewTab atRiskStudents={atRiskStudents} demoData={demoData} />
         )}
         {activeTab === "students" && (
           <StudentsTab
             selectedStudent={selectedStudent}
             setSelectedStudent={setSelectedStudent}
+            students={demoData.students}
+            weeklyProgress={demoData.weeklyProgress}
           />
         )}
-        {activeTab === "assignments" && <AssignmentsTab />}
-        {activeTab === "messages" && <MessagesTab />}
+        {activeTab === "assignments" && <AssignmentsTab assignments={demoData.assignments} />}
+        {activeTab === "messages" && <MessagesTab messages={demoData.messages} />}
       </div>
     </div>
   );
 }
 
 /* ========== OVERVIEW ========== */
-function OverviewTab({ atRiskStudents }) {
+function OverviewTab({ atRiskStudents, demoData }) {
   return (
     <div className="space-y-6">
       {/* Key Metrics */}
@@ -115,7 +140,7 @@ function OverviewTab({ atRiskStudents }) {
         <MetricCard
           icon={Users}
           label="Total Students"
-          value={mockStudents.length}
+          value={demoData.students.length}
           color="primary"
         />
         <MetricCard
@@ -127,7 +152,7 @@ function OverviewTab({ atRiskStudents }) {
         <MetricCard
           icon={ClipboardList}
           label="Active Assignments"
-          value={mockAssignments.length}
+          value={demoData.assignments.length}
           color="secondary"
         />
         <MetricCard
@@ -178,7 +203,7 @@ function OverviewTab({ atRiskStudents }) {
           Class Monthly Progress
         </h2>
         <ResponsiveContainer width="100%" height={280}>
-          <LineChart data={mockMonthlyProgress}>
+          <LineChart data={demoData.monthlyProgress}>
             <CartesianGrid strokeDasharray="3 3" stroke="#E5E7EB" />
             <XAxis dataKey="week" stroke="#9CA3AF" fontSize={12} />
             <YAxis stroke="#9CA3AF" fontSize={12} />
@@ -208,7 +233,7 @@ function OverviewTab({ atRiskStudents }) {
           Assignment Status
         </h2>
         <div className="space-y-3">
-          {mockAssignments.map((a) => (
+          {demoData.assignments.map((a) => (
             <div
               key={a.id}
               className="flex items-center justify-between p-4 rounded-xl bg-surface-dim"
@@ -241,17 +266,17 @@ function OverviewTab({ atRiskStudents }) {
 }
 
 /* ========== STUDENTS ========== */
-function StudentsTab({ selectedStudent, setSelectedStudent }) {
+function StudentsTab({ selectedStudent, setSelectedStudent, students = [], weeklyProgress = [] }) {
   const [search, setSearch] = useState("");
 
-  const filtered = mockStudents.filter((s) =>
+  const filtered = students.filter((s) =>
     s.name.toLowerCase().includes(search.toLowerCase())
   );
 
   if (selectedStudent) {
-    const s = mockStudents.find((st) => st.id === selectedStudent);
+    const s = students.find((st) => st.id === selectedStudent);
     return (
-      <StudentDetail student={s} goBack={() => setSelectedStudent(null)} />
+      <StudentDetail student={s} weeklyProgress={weeklyProgress} goBack={() => setSelectedStudent(null)} />
     );
   }
 
@@ -308,7 +333,7 @@ function StudentsTab({ selectedStudent, setSelectedStudent }) {
   );
 }
 
-function StudentDetail({ student, goBack }) {
+function StudentDetail({ student, weeklyProgress = [], goBack }) {
   if (!student) return null;
   return (
     <div className="space-y-6">
@@ -345,8 +370,8 @@ function StudentDetail({ student, goBack }) {
         <h3 className="text-lg font-semibold text-text mb-4">
           Weekly Reading Progress
         </h3>
-        <ResponsiveContainer width="100%" height={220}>
-          <BarChart data={mockWeeklyProgress}>
+          <ResponsiveContainer width="100%" height={220}>
+            <BarChart data={weeklyProgress}>
             <CartesianGrid strokeDasharray="3 3" stroke="#E5E7EB" />
             <XAxis dataKey="day" stroke="#9CA3AF" fontSize={12} />
             <YAxis stroke="#9CA3AF" fontSize={12} />
@@ -360,8 +385,32 @@ function StudentDetail({ student, goBack }) {
 }
 
 /* ========== ASSIGNMENTS ========== */
-function AssignmentsTab() {
+function AssignmentsTab({ assignments = [] }) {
   const [showForm, setShowForm] = useState(false);
+  const [localAssignments, setLocalAssignments] = useState(assignments);
+  const [form, setForm] = useState({ title: "", subject: "", difficulty: "Easy", dueDate: "" });
+  const [content, setContent] = useState("");
+
+  const handleCreate = () => {
+    if (!form.title.trim() || !form.dueDate) return;
+    const newAssignment = {
+      id: `local-${Date.now()}`,
+      title: form.title,
+      subject: form.subject || "General",
+      difficulty: form.difficulty,
+      dueDate: form.dueDate,
+      assignedTo: "Class 5A",
+      submitted: 0,
+      pending: 0,
+      overdue: 0,
+      totalStudents: 0,
+      createdAt: new Date().toISOString().split("T")[0],
+    };
+    setLocalAssignments((prev) => [...prev, newAssignment]);
+    setForm({ title: "", subject: "", difficulty: "Easy", dueDate: "" });
+    setContent("");
+    setShowForm(false);
+  };
 
   return (
     <div className="space-y-6">
@@ -382,29 +431,45 @@ function AssignmentsTab() {
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
             <input
               placeholder="Title"
+              value={form.title}
+              onChange={(e) => setForm((p) => ({ ...p, title: e.target.value }))}
               className="px-4 py-3 rounded-xl border border-border bg-surface-dim text-text placeholder:text-text-muted focus:outline-none focus:ring-2 focus:ring-primary/30"
             />
             <input
               placeholder="Subject"
+              value={form.subject}
+              onChange={(e) => setForm((p) => ({ ...p, subject: e.target.value }))}
               className="px-4 py-3 rounded-xl border border-border bg-surface-dim text-text placeholder:text-text-muted focus:outline-none focus:ring-2 focus:ring-primary/30"
             />
-            <select className="px-4 py-3 rounded-xl border border-border bg-surface-dim text-text">
+            <select
+              value={form.difficulty}
+              onChange={(e) => setForm((p) => ({ ...p, difficulty: e.target.value }))}
+              className="px-4 py-3 rounded-xl border border-border bg-surface-dim text-text"
+            >
               <option>Easy</option>
               <option>Medium</option>
               <option>Hard</option>
             </select>
             <input
               type="date"
+              value={form.dueDate}
+              onChange={(e) => setForm((p) => ({ ...p, dueDate: e.target.value }))}
               className="px-4 py-3 rounded-xl border border-border bg-surface-dim text-text"
             />
           </div>
           <textarea
             rows={3}
+            value={content}
+            onChange={(e) => setContent(e.target.value)}
             placeholder="Assignment content or instructions..."
             className="w-full px-4 py-3 rounded-xl border border-border bg-surface-dim text-text placeholder:text-text-muted focus:outline-none focus:ring-2 focus:ring-primary/30 resize-none"
           />
           <div className="flex gap-3">
-            <button className="px-5 py-2.5 rounded-xl bg-primary text-white font-medium hover:bg-primary-dark transition-colors text-sm">
+            <button
+              onClick={handleCreate}
+              disabled={!form.title.trim() || !form.dueDate}
+              className="px-5 py-2.5 rounded-xl bg-primary text-white font-medium hover:bg-primary-dark transition-colors text-sm disabled:opacity-40"
+            >
               Create
             </button>
             <button
@@ -418,7 +483,7 @@ function AssignmentsTab() {
       )}
 
       <div className="space-y-4">
-        {mockAssignments.map((a) => {
+        {localAssignments.map((a) => {
           const completionPct = Math.round(
             (a.submitted / a.totalStudents) * 100
           );
@@ -468,44 +533,72 @@ function AssignmentsTab() {
 }
 
 /* ========== MESSAGES ========== */
-function MessagesTab() {
+function MessagesTab({ messages = [] }) {
+  const [localMessages, setLocalMessages] = useState(messages);
+  const [newMessage, setNewMessage] = useState("");
+
+  const handleSend = () => {
+    if (!newMessage.trim()) return;
+    setLocalMessages((prev) => [
+      ...prev,
+      {
+        id: `local-${Date.now()}`,
+        from: "You (Teacher)",
+        fromRole: "teacher",
+        message: newMessage.trim(),
+        timestamp: new Date().toISOString(),
+        read: true,
+      },
+    ]);
+    setNewMessage("");
+  };
+
   return (
     <div className="space-y-4">
       <h2 className="text-xl font-semibold text-text">Parent Messages</h2>
       <div className="bg-surface rounded-2xl shadow-card p-6">
-        <div className="space-y-4">
-          <div className="p-4 rounded-xl bg-lavender">
-            <div className="flex items-center justify-between mb-2">
-              <span className="font-medium text-text text-sm">
-                To: Aditi's Parents
-              </span>
-              <span className="text-xs text-text-muted">Feb 5, 2026</span>
-            </div>
-            <p className="text-sm text-text-secondary">
-              Aditi has been making wonderful progress with her reading this
-              week. She read the Water Cycle chapter with great focus!
-            </p>
-          </div>
-          <div className="p-4 rounded-xl bg-mint">
-            <div className="flex items-center justify-between mb-2">
-              <span className="font-medium text-text text-sm">
-                From: Aditi's Mom
-              </span>
-              <span className="text-xs text-text-muted">Feb 5, 2026</span>
-            </div>
-            <p className="text-sm text-text-secondary">
-              Thank you for the update! She has been practicing at home too. Is
-              there anything specific we can help with?
-            </p>
-          </div>
+        <div className="space-y-4 max-h-96 overflow-y-auto mb-4">
+          {localMessages.map((m) => {
+            const isFromTeacher = m.fromRole === "teacher";
+            return (
+              <div
+                key={m.id}
+                className={`p-4 rounded-xl ${
+                  isFromTeacher ? "bg-lavender" : "bg-mint"
+                }`}
+              >
+                <div className="flex items-center justify-between mb-2">
+                  <span className="font-medium text-text text-sm">{m.from}</span>
+                  <span className="text-xs text-text-muted">
+                    {new Date(m.timestamp).toLocaleDateString("en-US", {
+                      month: "short",
+                      day: "numeric",
+                      hour: "2-digit",
+                      minute: "2-digit",
+                    })}
+                  </span>
+                </div>
+                <p className="text-sm text-text-secondary leading-relaxed">
+                  {m.message}
+                </p>
+              </div>
+            );
+          })}
         </div>
 
-        <div className="mt-4 flex gap-2">
+        <div className="flex gap-2">
           <input
-            placeholder="Type a message..."
+            value={newMessage}
+            onChange={(e) => setNewMessage(e.target.value)}
+            onKeyDown={(e) => e.key === "Enter" && handleSend()}
+            placeholder="Type a message to parents..."
             className="flex-1 px-4 py-3 rounded-xl border border-border bg-surface-dim text-text placeholder:text-text-muted focus:outline-none focus:ring-2 focus:ring-primary/30"
           />
-          <button className="px-5 py-3 rounded-xl bg-primary text-white font-medium hover:bg-primary-dark transition-colors text-sm">
+          <button
+            onClick={handleSend}
+            disabled={!newMessage.trim()}
+            className="px-5 py-3 rounded-xl bg-primary text-white font-medium hover:bg-primary-dark transition-colors text-sm disabled:opacity-40"
+          >
             Send
           </button>
         </div>

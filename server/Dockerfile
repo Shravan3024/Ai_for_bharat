@@ -1,28 +1,59 @@
-# Use the official Python 3.12 slim image
-FROM python:3.12-slim
+# ── Stage 1: Build deps ────────────────────────────────────────────────────────
+FROM python:3.12-slim AS builder
 
-# Set working directory
 WORKDIR /app
 
-# Set environment variables
-ENV PYTHONDONTWRITEBYTECODE=1
-ENV PYTHONUNBUFFERED=1
+ENV PYTHONDONTWRITEBYTECODE=1 \
+    PYTHONUNBUFFERED=1 \
+    PIP_NO_CACHE_DIR=1 \
+    PIP_DISABLE_PIP_VERSION_CHECK=1
 
-# Install system dependencies
+# Build-time system deps
 RUN apt-get update && apt-get install -y --no-install-recommends \
     gcc \
+    libpq-dev \
     && rm -rf /var/lib/apt/lists/*
 
-# Install Python dependencies
+# Install Python deps into /install so we can copy them cleanly
 COPY requirements.txt .
-RUN pip install --no-cache-dir -r requirements.txt
+RUN pip install --prefix=/install -r requirements.txt
 
-# Copy the rest of the application
+# ── Stage 2: Runtime ───────────────────────────────────────────────────────────
+FROM python:3.12-slim AS runtime
+
+WORKDIR /app
+
+ENV PYTHONDONTWRITEBYTECODE=1 \
+    PYTHONUNBUFFERED=1 \
+    PYTHONPATH=/app
+
+# Copy installed packages from builder
+COPY --from=builder /install /usr/local
+
+# Runtime system deps only
+RUN apt-get update && apt-get install -y --no-install-recommends \
+    libpq5 \
+    curl \
+    && rm -rf /var/lib/apt/lists/*
+
+# Copy application source
 COPY . .
 
-# Expose the port the app runs on
+# Create a non-root user for security
+RUN adduser --disabled-password --gecos "" appuser && chown -R appuser /app
+USER appuser
+
 EXPOSE 8000
 
-# Command to run the application
-# Using -m app.main to match the local development run command
-CMD ["python", "-m", "app.main"]
+# Healthcheck for ECS / ALB target group
+HEALTHCHECK --interval=30s --timeout=5s --start-period=10s --retries=3 \
+    CMD curl -f http://localhost:8000/api/health || exit 1
+
+# Use gunicorn + uvicorn workers for production concurrency
+CMD ["python", "-m", "gunicorn", "app.main:app", \
+     "--workers", "2", \
+     "--worker-class", "uvicorn.workers.UvicornWorker", \
+     "--bind", "0.0.0.0:8000", \
+     "--timeout", "120", \
+     "--access-logfile", "-", \
+     "--error-logfile", "-"]

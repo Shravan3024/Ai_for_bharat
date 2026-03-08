@@ -1,5 +1,14 @@
 const API_URL = import.meta.env.VITE_API_URL || "http://localhost:8000/api";
 
+const parseErrorMessage = async (response, fallbackMessage) => {
+  try {
+    const data = await response.json();
+    return data?.detail || data?.message || `${fallbackMessage} (HTTP ${response.status})`;
+  } catch {
+    return `${fallbackMessage} (HTTP ${response.status})`;
+  }
+};
+
 // Helper to get headers with token
 const getHeaders = (isMultipart = false) => {
   const token = localStorage.getItem("lexilearn_token");
@@ -53,6 +62,23 @@ export const apiService = {
     localStorage.removeItem("lexilearn_user");
   },
 
+  async syncCognitoUser(userData) {
+    try {
+      const response = await fetch(`${API_URL}/auth/sync`, {
+        method: "POST",
+        headers: getHeaders(),
+        body: JSON.stringify(userData),
+      });
+      if (!response.ok) {
+        throw new Error(await parseErrorMessage(response, "Failed to sync user with local database."));
+      }
+      return response.json();
+    } catch (error) {
+      console.error("Sync Error:", error);
+      throw error;
+    }
+  },
+
   getCurrentUser() {
     const user = localStorage.getItem("lexilearn_user");
     return user ? JSON.parse(user) : null;
@@ -81,7 +107,7 @@ export const apiService = {
       const response = await fetch(`${API_URL}/auth/me`, {
         headers: getHeaders(),
       });
-      if (!response.ok) throw new Error("Failed to fetch user");
+      if (!response.ok) throw new Error(await parseErrorMessage(response, "Failed to fetch user"));
       return response.json();
     },
 
@@ -144,6 +170,19 @@ export const apiService = {
     } catch (error) {
       console.error("API Error:", error);
       return { concepts: [], vocabulary: [], error: true };
+    }
+  },
+
+  async getLibrary() {
+    try {
+      const response = await fetch(`${API_URL}/processing/library`, {
+        headers: getHeaders(),
+      });
+      if (!response.ok) throw new Error("Failed to fetch library materials");
+      return response.json();
+    } catch (error) {
+      console.error("API Error:", error);
+      return { texts: [], vocabulary: [], error: true };
     }
   },
 
@@ -229,6 +268,61 @@ export const apiService = {
     } catch (error) {
       console.error("API Error:", error);
       return { error: true };
+    }
+  },
+
+  // --- Demo Data Routes ---
+  async getTeacherDemoData() {
+    try {
+      const response = await fetch(`${API_URL}/demo/teacher`, {
+        headers: getHeaders(),
+      });
+      if (!response.ok) throw new Error("Failed to fetch teacher demo data");
+      return response.json();
+    } catch (error) {
+      console.error("API Error:", error);
+      return { students: [], assignments: [], weeklyProgress: [], monthlyProgress: [], messages: [], error: true };
+    }
+  },
+
+  async getParentDemoData() {
+    try {
+      const response = await fetch(`${API_URL}/demo/parent`, {
+        headers: getHeaders(),
+      });
+      if (!response.ok) throw new Error("Failed to fetch parent demo data");
+      return response.json();
+    } catch (error) {
+      console.error("API Error:", error);
+      return { child: null, weeklyProgress: [], monthlyProgress: [], messages: [], error: true };
+    }
+  },
+
+  async getStudentProgressDemo() {
+    try {
+      const response = await fetch(`${API_URL}/demo/student/progress`, {
+        headers: getHeaders(),
+      });
+      if (!response.ok) throw new Error("Failed to fetch student demo data");
+      return response.json();
+    } catch (error) {
+      console.error("API Error:", error);
+      return { weeklyProgress: [], quizzes: [], error: true };
+    }
+  },
+
+  async chat(message, history = []) {
+    try {
+      const response = await fetch(`${API_URL}/processing/chat`, {
+        method: "POST",
+        headers: getHeaders(),
+        body: JSON.stringify({ message, history }),
+      });
+      if (!response.ok) throw new Error("Backend unavailable");
+      return response.json();
+    } catch (error) {
+      console.error("Chat API Error:", error);
+      return { reply: "Sorry, I'm having trouble connecting. Please try again.", error: true };
     }
   },
 };

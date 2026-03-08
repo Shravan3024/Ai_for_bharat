@@ -1,13 +1,8 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef } from "react";
 import { useAuthStore, useAccessibilityStore } from "../stores/authStore";
-import {
-  mockReadingTexts,
-  mockVocabulary,
-  mockQuizzes,
-  mockWeeklyProgress,
-} from "../data/mockData";
 import { apiService } from "../services/apiService";
 import Navbar from "../components/Navbar";
+import { useNavigate } from "react-router-dom";
 import {
   BookOpen,
   Headphones,
@@ -32,6 +27,7 @@ import {
   MessageCircle,
   Loader2,
   AlertCircle,
+  Bot,
 } from "lucide-react";
 import {
   BarChart,
@@ -47,32 +43,45 @@ import {
 
 export default function StudentDashboard() {
   const { user } = useAuthStore();
+  const navigate = useNavigate();
   const [activeTab, setActiveTab] = useState("home");
   const [studentSummary, setStudentSummary] = useState(null);
+  const [libraryData, setLibraryData] = useState({ texts: [], vocabulary: [] });
+  const [demoData, setDemoData] = useState({ weeklyProgress: [], quizzes: [] });
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
 
   useEffect(() => {
-    async function fetchSummary() {
+    async function fetchData() {
       if (!user?.id) return;
       try {
         setLoading(true);
-        // In a real app, we might need the student_profile.id, 
-        // but for now let's assume the backend handles it or we use user.id
-        // Actually, our API takes student_id which is student_profile.id
         const profile = await apiService.getProfile();
         if (profile && profile.id) {
           const summary = await apiService.getStudentSummary(profile.id);
           setStudentSummary(summary);
         }
+        
+        // Fetch library content from API
+        const library = await apiService.getLibrary();
+        if (library && library.texts) {
+          setLibraryData(library);
+        }
+
+        // Fetch remaining hardcoded mock data for the demo
+        const demo = await apiService.getStudentProgressDemo();
+        if (demo && !demo.error) {
+          setDemoData(demo);
+        }
+        
         setLoading(false);
       } catch (err) {
-        console.error("Failed to fetch student summary:", err);
+        console.error("Failed to fetch dashboard data:", err);
         setError("Failed to load your progress data.");
         setLoading(false);
       }
     }
-    fetchSummary();
+    fetchData();
   }, [user]);
 
   const tabs = [
@@ -81,6 +90,7 @@ export default function StudentDashboard() {
     { key: "quiz", label: "Quiz", icon: Brain },
     { key: "vocab", label: "Vocabulary", icon: BookMarked },
     { key: "progress", label: "Progress", icon: BarChart3 },
+    { key: "chat", label: "LexiBot", icon: Bot },
   ];
 
   if (loading && !studentSummary) {
@@ -136,19 +146,20 @@ export default function StudentDashboard() {
           ))}
         </div>
 
-        {/* Tab Content */}
-        {activeTab === "home" && <HomeTab summary={studentSummary} />}
-        {activeTab === "read" && <ReadTab summary={studentSummary} />}
-        {activeTab === "quiz" && <QuizTab summary={studentSummary} />}
-        {activeTab === "vocab" && <VocabTab summary={studentSummary} />}
-        {activeTab === "progress" && <ProgressTab summary={studentSummary} />}
+          {/* Tab Content */}
+          {activeTab === "home" && <HomeTab summary={studentSummary} libraryTexts={libraryData.texts} weeklyProgress={demoData.weeklyProgress} onTabChange={setActiveTab} />}
+          {activeTab === "read" && <ReadTab summary={studentSummary} libraryTexts={libraryData.texts} />}
+          {activeTab === "quiz" && <QuizTab summary={studentSummary} quizzes={demoData.quizzes} />}
+          {activeTab === "vocab" && <VocabTab summary={studentSummary} vocabulary={libraryData.vocabulary} />}
+          {activeTab === "progress" && <ProgressTab summary={studentSummary} weeklyProgress={demoData.weeklyProgress} />}
+          {activeTab === "chat" && <ChatTab navigate={navigate} />}
       </div>
     </div>
   );
 }
 
 /* ========== HOME TAB ========== */
-function HomeTab({ summary }) {
+function HomeTab({ summary, libraryTexts = [], weeklyProgress = [], onTabChange }) {
   return (
     <div className="space-y-6">
       {/* Quick Stats */}
@@ -183,17 +194,11 @@ function HomeTab({ summary }) {
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
         <ActionCard
           icon={BookOpen}
-          title="Continue Reading"
-          desc="Pick up where you left off"
+          title="Start Reading"
+          desc="Read and get AI explanations"
           color="primary"
           bg="bg-lavender"
-        />
-        <ActionCard
-          icon={Headphones}
-          title="Listen Mode"
-          desc="Listen to your current text"
-          color="success"
-          bg="bg-mint"
+          onClick={() => onTabChange("read")}
         />
         <ActionCard
           icon={Brain}
@@ -201,6 +206,15 @@ function HomeTab({ summary }) {
           desc="Test your knowledge"
           color="accent"
           bg="bg-peach"
+          onClick={() => onTabChange("quiz")}
+        />
+        <ActionCard
+          icon={Bot}
+          title="Ask LexiBot"
+          desc="Chat with your AI assistant"
+          color="success"
+          bg="bg-mint"
+          onClick={() => onTabChange("chat")}
         />
       </div>
 
@@ -208,10 +222,11 @@ function HomeTab({ summary }) {
       <div className="bg-surface rounded-2xl shadow-card p-6">
         <h2 className="text-xl font-semibold text-text mb-4">Recent Texts</h2>
         <div className="space-y-3">
-          {mockReadingTexts.map((text) => (
+          {libraryTexts.map((text) => (
             <div
               key={text.id}
-              className="flex items-center justify-between p-4 rounded-xl bg-surface-dim hover:bg-cream transition-colors"
+              className="flex items-center justify-between p-4 rounded-xl bg-surface-dim hover:bg-cream transition-colors cursor-pointer"
+              onClick={() => onTabChange("read")}
             >
               <div className="flex items-center gap-3">
                 <div className="w-10 h-10 rounded-xl bg-primary/10 flex items-center justify-center">
@@ -224,7 +239,7 @@ function HomeTab({ summary }) {
                   </p>
                 </div>
               </div>
-              <span className="text-sm text-primary font-medium">Continue</span>
+              <span className="text-sm text-primary font-medium">Read</span>
             </div>
           ))}
         </div>
@@ -236,7 +251,7 @@ function HomeTab({ summary }) {
           This Week's Reading
         </h2>
         <ResponsiveContainer width="100%" height={200}>
-          <BarChart data={mockWeeklyProgress}>
+          <BarChart data={weeklyProgress}>
             <CartesianGrid strokeDasharray="3 3" stroke="#E5E7EB" />
             <XAxis dataKey="day" stroke="#9CA3AF" fontSize={12} />
             <YAxis stroke="#9CA3AF" fontSize={12} />
@@ -250,16 +265,18 @@ function HomeTab({ summary }) {
 }
 
 /* ========== READ TAB ========== */
-function ReadTab({ summary }) {
+function ReadTab({ summary, libraryTexts = [] }) {
+  const { readingPace } = useAccessibilityStore();
+  const fileInputRef = useRef(null);
   const [inputText, setInputText] = useState("");
   const [sentences, setSentences] = useState([]);
   const [currentIndex, setCurrentIndex] = useState(0);
-    const [aiOutput, setAiOutput] = useState("");
-    const [aiLoading, setAiLoading] = useState(false);
-    const [ragInput, setRagInput] = useState("");
-    const [ragOutput, setRagOutput] = useState("");
-    const [ragLoading, setRagLoading] = useState(false);
-    const [speechRate, setSpeechRate] = useState(0.8);
+  const [aiOutput, setAiOutput] = useState("");
+  const [aiLoading, setAiLoading] = useState(false);
+  const [ragInput, setRagInput] = useState("");
+  const [ragOutput, setRagOutput] = useState("");
+  const [ragLoading, setRagLoading] = useState(false);
+  const [pdfLoading, setPdfLoading] = useState(false);
 
   const [sessionId, setSessionId] = useState(null);
   const [metrics, setMetrics] = useState([]);
@@ -269,7 +286,6 @@ function ReadTab({ summary }) {
     if (!text) return;
     
     try {
-      // Start a real session on the backend
       const session = await apiService.startSession("manual_input", "text");
       setSessionId(session.id);
       
@@ -280,9 +296,27 @@ function ReadTab({ summary }) {
       setMetrics([]);
     } catch (err) {
       console.error("Failed to start session:", err);
-      // Fallback to local
       const split = text.match(/[^.!?]+[.!?]+/g) || [text];
       setSentences(split.map((s) => s.trim()));
+    }
+  };
+
+  const handlePDFUpload = async (e) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+    setPdfLoading(true);
+    try {
+      const res = await apiService.uploadPDF(file);
+      if (res.text) {
+        setInputText(res.text);
+      } else {
+        alert("Could not extract text from this PDF.");
+      }
+    } catch (err) {
+      alert("Failed to upload PDF.");
+    } finally {
+      setPdfLoading(false);
+      if (fileInputRef.current) fileInputRef.current.value = "";
     }
   };
 
@@ -293,10 +327,9 @@ function ReadTab({ summary }) {
       const res = await apiService.simplifyText(sentences[currentIndex], 5);
       setAiOutput(res.simplified);
       
-      // Track this metric
       const newMetric = {
         timestamp: new Date().toISOString(),
-        reading_speed_wpm: 60, // Mock
+        reading_speed_wpm: 60,
         accuracy_percentage: 100,
         simplification_level_requested: 5,
         reread_count: 0,
@@ -324,27 +357,26 @@ function ReadTab({ summary }) {
     }
   };
 
-    const finishSession = async () => {
-      if (!sessionId) return;
-      try {
-        await apiService.updateSessionMetrics(sessionId, {
-          metrics: metrics,
-          end_time: new Date().toISOString()
-        });
-        // Call the calculation endpoint via apiService
-        await apiService.calculateSessionAnalytics(sessionId, metrics);
-        alert("Session saved! Your progress has been updated.");
-        setSentences([]);
-      } catch (err) {
-        console.error("Failed to finish session:", err);
-      }
-    };
+  const finishSession = async () => {
+    if (!sessionId) return;
+    try {
+      await apiService.updateSessionMetrics(sessionId, {
+        metrics: metrics,
+        end_time: new Date().toISOString()
+      });
+      await apiService.calculateSessionAnalytics(sessionId, metrics);
+      alert("Session saved! Your progress has been updated.");
+      setSentences([]);
+    } catch (err) {
+      console.error("Failed to finish session:", err);
+    }
+  };
 
   const speakSentence = () => {
     if (!sentences.length) return;
     window.speechSynthesis.cancel();
     const utterance = new SpeechSynthesisUtterance(sentences[currentIndex]);
-    utterance.rate = speechRate;
+    utterance.rate = readingPace;
     utterance.lang = "en-US";
     window.speechSynthesis.speak(utterance);
   };
@@ -364,6 +396,30 @@ function ReadTab({ summary }) {
           placeholder="Paste your text here..."
           className="w-full px-4 py-3 rounded-xl border border-border bg-surface-dim text-text placeholder:text-text-muted focus:outline-none focus:ring-2 focus:ring-primary/30 focus:border-primary transition-colors resize-none reading-text"
         />
+
+        {/* PDF Upload */}
+        <div>
+          <input
+            ref={fileInputRef}
+            type="file"
+            accept="application/pdf"
+            onChange={handlePDFUpload}
+            className="hidden"
+            id="pdf-upload"
+          />
+          <label
+            htmlFor="pdf-upload"
+            className={`flex items-center justify-center gap-2 w-full py-2.5 rounded-xl border-2 border-dashed border-border text-sm font-medium text-text-secondary cursor-pointer hover:border-primary hover:text-primary transition-colors ${pdfLoading ? "opacity-60 cursor-not-allowed" : ""}`}
+          >
+            {pdfLoading ? (
+              <Loader2 className="w-4 h-4 animate-spin" />
+            ) : (
+              <FileText className="w-4 h-4" />
+            )}
+            {pdfLoading ? "Extracting text..." : "Upload PDF"}
+          </label>
+        </div>
+
         <button
           onClick={startReading}
           disabled={!inputText.trim()}
@@ -376,7 +432,7 @@ function ReadTab({ summary }) {
         <div className="pt-2">
           <p className="text-sm text-text-muted mb-2">Or try a sample:</p>
           <div className="space-y-2">
-            {mockReadingTexts.map((t) => (
+            {libraryTexts.map((t) => (
               <button
                 key={t.id}
                 onClick={() => setInputText(t.originalText)}
@@ -398,7 +454,7 @@ function ReadTab({ summary }) {
               Ready to Read
             </h3>
             <p className="text-text-secondary">
-              Paste text on the left and click "Start Reading" to begin.
+              Paste text or upload a PDF on the left, then click "Start Reading".
             </p>
           </div>
         ) : (
@@ -487,56 +543,56 @@ function ReadTab({ summary }) {
             </div>
 
             {aiOutput && (
-                <div className="bg-lavender rounded-2xl p-6 border border-primary/10">
-                  <h3 className="font-semibold text-text mb-2 flex items-center gap-2">
-                    <Sparkles className="w-5 h-5 text-secondary" />
-                    AI Explanation
-                  </h3>
-                  <p className="text-text-secondary leading-relaxed reading-text">
-                    {aiOutput}
-                  </p>
+              <div className="bg-lavender rounded-2xl p-6 border border-primary/10">
+                <h3 className="font-semibold text-text mb-2 flex items-center gap-2">
+                  <Sparkles className="w-5 h-5 text-secondary" />
+                  AI Explanation
+                </h3>
+                <p className="text-text-secondary leading-relaxed reading-text">
+                  {aiOutput}
+                </p>
+              </div>
+            )}
+
+            {/* RAG Section */}
+            <div className="bg-mint/30 rounded-2xl p-6 border border-success/10 mt-6">
+              <h3 className="font-semibold text-text mb-2 flex items-center gap-2">
+                <HelpCircle className="w-5 h-5 text-success" />
+                Ask about the text
+              </h3>
+              <div className="flex gap-2 mb-4">
+                <input
+                  type="text"
+                  value={ragInput}
+                  onChange={(e) => setRagInput(e.target.value)}
+                  placeholder="e.g., What is the main idea?"
+                  className="flex-1 px-4 py-2 rounded-xl border border-border bg-white text-sm focus:outline-none focus:ring-2 focus:ring-success/30"
+                />
+                <button
+                  onClick={handleAskAI}
+                  disabled={ragLoading || !ragInput.trim()}
+                  className="px-4 py-2 rounded-xl bg-success text-white text-sm font-semibold hover:bg-success-dark transition-colors disabled:opacity-50"
+                >
+                  {ragLoading ? <Loader2 className="w-4 h-4 animate-spin" /> : "Ask"}
+                </button>
+              </div>
+              {ragOutput && (
+                <div className="bg-white/50 rounded-xl p-4 text-sm text-text-secondary italic">
+                  {ragOutput}
                 </div>
               )}
-
-              {/* RAG Section */}
-              <div className="bg-mint/30 rounded-2xl p-6 border border-success/10 mt-6">
-                <h3 className="font-semibold text-text mb-2 flex items-center gap-2">
-                  <HelpCircle className="w-5 h-5 text-success" />
-                  Ask about the text
-                </h3>
-                <div className="flex gap-2 mb-4">
-                  <input
-                    type="text"
-                    value={ragInput}
-                    onChange={(e) => setRagInput(e.target.value)}
-                    placeholder="e.g., What is the main idea?"
-                    className="flex-1 px-4 py-2 rounded-xl border border-border bg-white text-sm focus:outline-none focus:ring-2 focus:ring-success/30"
-                  />
-                  <button
-                    onClick={handleAskAI}
-                    disabled={ragLoading || !ragInput.trim()}
-                    className="px-4 py-2 rounded-xl bg-success text-white text-sm font-semibold hover:bg-success-dark transition-colors disabled:opacity-50"
-                  >
-                    {ragLoading ? <Loader2 className="w-4 h-4 animate-spin" /> : "Ask"}
-                  </button>
-                </div>
-                {ragOutput && (
-                  <div className="bg-white/50 rounded-xl p-4 text-sm text-text-secondary italic">
-                    {ragOutput}
-                  </div>
-                )}
-              </div>
-            </>
-          )}
-        </div>
+            </div>
+          </>
+        )}
       </div>
-    );
-  }
+    </div>
+  );
+}
 
 
 /* ========== QUIZ TAB ========== */
-function QuizTab({ summary }) {
-  const [currentQuiz, setCurrentQuiz] = useState(mockQuizzes[0]);
+function QuizTab({ summary, quizzes = [] }) {
+  const [currentQuiz, setCurrentQuiz] = useState(quizzes[0] || null);
   const [currentQ, setCurrentQ] = useState(0);
   const [selected, setSelected] = useState(null);
   const [answered, setAnswered] = useState(false);
@@ -568,9 +624,30 @@ function QuizTab({ summary }) {
     }
   };
 
-  const question = currentQuiz.questions[currentQ];
+    const question = currentQuiz?.questions?.[currentQ];
 
-  const handleAnswer = (idx) => {
+    // Guard: if no question available yet, show generate button
+    if (!question) {
+      return (
+        <div className="max-w-xl mx-auto text-center py-12">
+          <div className="w-16 h-16 rounded-full bg-surface-dim flex items-center justify-center mx-auto mb-4">
+            <Brain className="w-8 h-8 text-text-muted" />
+          </div>
+          <h2 className="text-xl font-semibold text-text">No Questions Available</h2>
+          <p className="text-text-secondary mt-2 mb-6">Generate a new quiz to test your knowledge.</p>
+          <button
+            onClick={handleGenerateQuiz}
+            disabled={generating}
+            className="px-6 py-3 rounded-xl bg-secondary text-white font-bold hover:bg-secondary-dark transition-all flex items-center justify-center gap-2 shadow-card mx-auto"
+          >
+            {generating ? <Loader2 className="w-5 h-5 animate-spin" /> : <Sparkles className="w-5 h-5" />}
+            Generate New Quiz with AI
+          </button>
+        </div>
+      );
+    }
+
+    const handleAnswer = (idx) => {
     if (answered) return;
     setSelected(idx);
     setAnswered(true);
@@ -580,29 +657,31 @@ function QuizTab({ summary }) {
   };
 
   const nextQuestion = () => {
-    if (currentQ < currentQuiz.questions.length - 1) {
-      setCurrentQ(currentQ + 1);
-      setSelected(null);
-      setAnswered(false);
-    } else {
-      setFinished(true);
-      submitResult();
-    }
-  };
+      if (currentQ < currentQuiz.questions.length - 1) {
+        setCurrentQ(currentQ + 1);
+        setSelected(null);
+        setAnswered(false);
+      } else {
+        setFinished(true);
+        // Pass the final score directly to avoid stale closure
+        const finalScore = selected === question.correctAnswer ? score + 1 : score;
+        submitResult(finalScore, currentQuiz);
+      }
+    };
 
-  const submitResult = async () => {
-    try {
-      await apiService.submitQuizResult({
-        student_id: 0, // Backend uses current_user anyway
-        quiz_title: currentQuiz.title,
-        score: score,
-        total_questions: currentQuiz.questions.length,
-        details: {}
-      });
-    } catch (err) {
-      console.error("Failed to submit result:", err);
-    }
-  };
+    const submitResult = async (finalScore, quiz) => {
+      try {
+        await apiService.submitQuizResult({
+          student_id: 0, // Backend uses current_user anyway
+          quiz_title: quiz.title,
+          score: finalScore,
+          total_questions: quiz.questions.length,
+          details: {}
+        });
+      } catch (err) {
+        console.error("Failed to submit result:", err);
+      }
+    };
 
   const resetQuiz = () => {
     setCurrentQ(0);
@@ -611,6 +690,26 @@ function QuizTab({ summary }) {
     setScore(0);
     setFinished(false);
   };
+
+  if (!currentQuiz) {
+    return (
+      <div className="max-w-xl mx-auto text-center py-12">
+        <div className="w-16 h-16 rounded-full bg-surface-dim flex items-center justify-center mx-auto mb-4">
+          <Brain className="w-8 h-8 text-text-muted" />
+        </div>
+        <h2 className="text-xl font-semibold text-text">No Quizzes Active</h2>
+        <p className="text-text-secondary mt-2 mb-6">You can generate a new quiz to test your knowledge.</p>
+        <button 
+          onClick={handleGenerateQuiz}
+          disabled={generating}
+          className="px-6 py-3 rounded-xl bg-secondary text-white font-bold hover:bg-secondary-dark transition-all flex items-center justify-center gap-2 shadow-card mx-auto"
+        >
+          {generating ? <Loader2 className="w-5 h-5 animate-spin" /> : <Sparkles className="w-5 h-5" />}
+          Generate New Quiz with AI
+        </button>
+      </div>
+    );
+  }
 
   if (finished) {
     return (
@@ -701,15 +800,15 @@ function QuizTab({ summary }) {
 }
 
 /* ========== VOCABULARY TAB ========== */
-function VocabTab({ summary }) {
+function VocabTab({ summary, vocabulary = [] }) {
   return (
     <div className="space-y-4">
       <div className="flex items-center justify-between">
         <h2 className="text-xl font-semibold text-text">My Vocabulary</h2>
-        <span className="text-sm text-text-muted">{mockVocabulary.length} words</span>
+        <span className="text-sm text-text-muted">{vocabulary.length} words</span>
       </div>
       <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-        {mockVocabulary.map((word) => (
+        {vocabulary.map((word) => (
           <div key={word.id} className="bg-surface rounded-2xl shadow-card p-5">
             <h3 className="text-lg font-semibold text-text">{word.word}</h3>
             <p className="text-text-secondary text-sm mb-3">{word.definition}</p>
@@ -724,7 +823,7 @@ function VocabTab({ summary }) {
 }
 
 /* ========== PROGRESS TAB ========== */
-function ProgressTab({ summary }) {
+function ProgressTab({ summary, weeklyProgress = [] }) {
   return (
     <div className="space-y-6">
       <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
@@ -757,7 +856,7 @@ function ProgressTab({ summary }) {
       <div className="bg-surface rounded-2xl shadow-card p-6">
         <h2 className="text-xl font-semibold text-text mb-4">Reading Accuracy Trend</h2>
         <ResponsiveContainer width="100%" height={250}>
-          <LineChart data={mockWeeklyProgress}>
+          <LineChart data={weeklyProgress}>
             <CartesianGrid strokeDasharray="3 3" />
             <XAxis dataKey="day" />
             <YAxis />
@@ -765,6 +864,113 @@ function ProgressTab({ summary }) {
             <Line type="monotone" dataKey="score" stroke="#8B5CF6" strokeWidth={2} />
           </LineChart>
         </ResponsiveContainer>
+      </div>
+    </div>
+  );
+}
+
+/* ========== CHAT TAB ========== */
+function ChatTab({ navigate }) {
+  const { user } = useAuthStore();
+  const [messages, setMessages] = useState([
+    {
+      role: "assistant",
+      content: `Hi${user?.full_name ? ", " + user.full_name.split(" ")[0] : ""}! I'm LexiBot. Ask me anything about reading, words, or learning!`,
+    },
+  ]);
+  const [input, setInput] = useState("");
+  const [loading, setLoading] = useState(false);
+  const bottomRef = useRef(null);
+
+  useEffect(() => {
+    bottomRef.current?.scrollIntoView({ behavior: "smooth" });
+  }, [messages]);
+
+  const sendMessage = async (text) => {
+    const userText = (text || input).trim();
+    if (!userText || loading) return;
+    const newMessages = [...messages, { role: "user", content: userText }];
+    setMessages(newMessages);
+    setInput("");
+    setLoading(true);
+    try {
+      const history = newMessages.slice(-8).map((m) => ({ role: m.role, content: m.content }));
+      const res = await apiService.chat(userText, history);
+      setMessages((prev) => [...prev, { role: "assistant", content: res.reply }]);
+    } catch {
+      setMessages((prev) => [...prev, { role: "assistant", content: "Sorry, I had trouble connecting. Please try again." }]);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const QUICK_PROMPTS = [
+    "Help me understand a word",
+    "Give me a reading tip",
+    "What is dyslexia?",
+    "I'm feeling frustrated",
+  ];
+
+  return (
+    <div className="max-w-2xl mx-auto space-y-4">
+      <div className="flex items-center gap-3 bg-surface rounded-2xl shadow-card px-5 py-4">
+        <div className="w-10 h-10 rounded-xl bg-secondary/10 flex items-center justify-center">
+          <Bot className="w-5 h-5 text-secondary" />
+        </div>
+        <div className="flex-1">
+          <h2 className="text-lg font-bold text-text">LexiBot</h2>
+          <p className="text-sm text-text-muted">Your personal AI reading assistant</p>
+        </div>
+        <span className="text-xs font-medium px-2 py-0.5 rounded-full bg-success/10 text-success">Online</span>
+      </div>
+
+      {/* Quick prompts */}
+      <div className="flex gap-2 flex-wrap">
+        {QUICK_PROMPTS.map((p) => (
+          <button key={p} onClick={() => sendMessage(p)} disabled={loading}
+            className="px-3 py-1.5 rounded-full border border-border bg-surface text-sm text-text-secondary hover:border-primary hover:text-primary transition-colors disabled:opacity-40">
+            {p}
+          </button>
+        ))}
+      </div>
+
+      {/* Messages */}
+      <div className="bg-surface rounded-2xl shadow-card p-4 space-y-4 overflow-y-auto max-h-[400px] min-h-[280px]">
+        {messages.map((msg, i) => (
+          <div key={i} className={`flex items-start gap-3 ${msg.role === "user" ? "flex-row-reverse" : ""}`}>
+            <div className={`w-8 h-8 rounded-full flex items-center justify-center flex-shrink-0 ${msg.role === "assistant" ? "bg-secondary/10" : "bg-primary/10"}`}>
+              {msg.role === "assistant" ? <Bot className="w-4 h-4 text-secondary" /> : <MessageCircle className="w-4 h-4 text-primary" />}
+            </div>
+            <div className={`max-w-[80%] px-4 py-3 rounded-2xl text-sm leading-relaxed reading-text whitespace-pre-wrap ${msg.role === "assistant" ? "bg-lavender text-text rounded-tl-none" : "bg-primary text-white rounded-tr-none"}`}>
+              {msg.content}
+            </div>
+          </div>
+        ))}
+        {loading && (
+          <div className="flex items-start gap-3">
+            <div className="w-8 h-8 rounded-full bg-secondary/10 flex items-center justify-center flex-shrink-0">
+              <Bot className="w-4 h-4 text-secondary" />
+            </div>
+            <div className="bg-lavender rounded-2xl rounded-tl-none px-4 py-3">
+              <Loader2 className="w-4 h-4 animate-spin text-secondary" />
+            </div>
+          </div>
+        )}
+        <div ref={bottomRef} />
+      </div>
+
+      {/* Input */}
+      <div className="flex gap-2">
+        <input type="text" value={input} onChange={(e) => setInput(e.target.value)}
+          onKeyDown={(e) => e.key === "Enter" && sendMessage()}
+          placeholder="Ask LexiBot anything..."
+          disabled={loading}
+          className="flex-1 px-4 py-3 rounded-xl border border-border bg-surface text-text placeholder:text-text-muted focus:outline-none focus:ring-2 focus:ring-primary/30 focus:border-primary transition-colors reading-text"
+        />
+        <button onClick={() => sendMessage()} disabled={!input.trim() || loading}
+          className="px-4 py-3 rounded-xl bg-primary text-white hover:bg-primary-dark transition-colors disabled:opacity-40">
+          {loading ? <Loader2 className="w-5 h-5 animate-spin" /> : <Sparkles className="w-5 h-5" />}
+        </button>
       </div>
     </div>
   );
@@ -794,7 +1000,7 @@ function StatCard({ icon: Icon, label, value, color }) {
   );
 }
 
-function ActionCard({ icon: Icon, title, desc, color, bg }) {
+function ActionCard({ icon: Icon, title, desc, color, bg, onClick }) {
   const colorMap = {
     primary: "text-primary bg-primary/20",
     secondary: "text-secondary bg-secondary/20",
@@ -803,7 +1009,7 @@ function ActionCard({ icon: Icon, title, desc, color, bg }) {
   };
 
   return (
-    <div className={`${bg} rounded-2xl p-6 hover:shadow-card-hover transition-shadow cursor-pointer border border-transparent hover:border-white/50`}>
+    <div onClick={onClick} className={`${bg} rounded-2xl p-6 hover:shadow-card-hover transition-shadow cursor-pointer border border-transparent hover:border-white/50`}>
       <div className={`w-12 h-12 rounded-xl flex items-center justify-center mb-3 ${colorMap[color]}`}>
         <Icon className="w-6 h-6" />
       </div>

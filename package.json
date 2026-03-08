@@ -3,16 +3,17 @@
   "private": true,
   "version": "0.0.0",
   "type": "module",
-    "scripts": {
-      "dev": "vite",
-      "start-all": "concurrently \"cd server && python -m app.main\" \"bun run dev\"",
-      "build": "vite build",
-      "lint": "eslint .",
-      "preview": "vite preview"
-    },
+  "scripts": {
+    "dev": "vite",
+    "start-all": "concurrently \"cd server && python -m app.main\" \"bun run dev\"",
+    "build": "vite build",
+    "lint": "eslint .",
+    "preview": "vite preview"
+  },
   "dependencies": {
     "@google/generative-ai": "^0.24.1",
     "@tanstack/react-query": "^5.90.20",
+    "amazon-cognito-identity-js": "^6.3.16",
     "class-variance-authority": "^0.7.1",
     "clsx": "^2.1.1",
     "lucide-react": "^0.563.0",

@@ -123,6 +123,18 @@ body {
   }
 }
 
+/* Dyslexia-friendly font mode */
+[data-font="dyslexic"] body,
+[data-font="dyslexic"] .reading-text,
+[data-font="dyslexic"] input,
+[data-font="dyslexic"] textarea,
+[data-font="dyslexic"] button {
+  font-family: 'OpenDyslexic', 'Lexend', system-ui, sans-serif !important;
+  letter-spacing: 0.08em;
+  word-spacing: 0.16em;
+  line-height: 2;
+}
+
 /* Selection styling */
 ::selection {
   background-color: #C7D2FE;

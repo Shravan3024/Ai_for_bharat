@@ -1,13 +1,6 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { useAuthStore } from "../stores/authStore";
-import {
-  mockStudents,
-  mockWeeklyProgress,
-  mockMonthlyProgress,
-  mockVocabulary,
-  mockQuizzes,
-  mockMessages,
-} from "../data/mockData";
+import { apiService } from "../services/apiService";
 import Navbar from "../components/Navbar";
 import {
   BookOpen,
@@ -39,12 +32,31 @@ import {
   Cell,
 } from "recharts";
 
-// The parent sees their child's (Aditi) data
-const child = mockStudents[0];
-
 export default function ParentDashboard() {
   const { user } = useAuthStore();
   const [activeTab, setActiveTab] = useState("overview");
+
+  const [demoData, setDemoData] = useState({
+    child: null,
+    weeklyProgress: [],
+    monthlyProgress: [],
+    messages: []
+  });
+  const [loading, setLoading] = useState(true);
+
+  useEffect(() => {
+    async function fetchData() {
+      setLoading(true);
+      const data = await apiService.getParentDemoData();
+      if (data && !data.error) {
+        setDemoData(data);
+      }
+      setLoading(false);
+    }
+    fetchData();
+  }, []);
+
+  const child = demoData.child;
 
   const tabs = [
     { key: "overview", label: "Overview", icon: BarChart3 },
@@ -54,6 +66,14 @@ export default function ParentDashboard() {
     { key: "messages", label: "Messages", icon: MessageCircle },
   ];
 
+  if (loading || !child) {
+    return (
+      <div className="min-h-screen bg-cream flex items-center justify-center">
+        <p className="text-text-secondary font-medium">Loading parent dashboard...</p>
+      </div>
+    );
+  }
+
   return (
     <div className="min-h-screen bg-cream">
       <Navbar />
@@ -61,7 +81,7 @@ export default function ParentDashboard() {
         {/* Greeting */}
         <div className="mb-6">
           <h1 className="text-3xl font-bold text-text">
-            Hello, {user?.name?.split(" ")[0] || "Parent"}
+            Hello, {user?.full_name?.split(" ")[0] || "Parent"}
           </h1>
           <p className="text-text-secondary mt-1">
             Here's how {child.name.split(" ")[0]} is doing this week
@@ -86,18 +106,18 @@ export default function ParentDashboard() {
           ))}
         </div>
 
-        {activeTab === "overview" && <OverviewTab />}
-        {activeTab === "reading" && <ReadingTab />}
-        {activeTab === "vocabulary" && <VocabularyTab />}
-        {activeTab === "quizzes" && <QuizzesTab />}
-        {activeTab === "messages" && <MessagesTab />}
+        {activeTab === "overview" && <OverviewTab child={child} weeklyProgress={demoData.weeklyProgress} monthlyProgress={demoData.monthlyProgress} />}
+        {activeTab === "reading" && <ReadingTab child={child} weeklyProgress={demoData.weeklyProgress} />}
+        {activeTab === "vocabulary" && <VocabularyTab monthlyProgress={demoData.monthlyProgress} />}
+        {activeTab === "quizzes" && <QuizzesTab child={child} weeklyProgress={demoData.weeklyProgress} />}
+        {activeTab === "messages" && <MessagesTab messages={demoData.messages} />}
       </div>
     </div>
   );
 }
 
 /* ========== OVERVIEW TAB ========== */
-function OverviewTab() {
+function OverviewTab({ child, weeklyProgress = [], monthlyProgress = [] }) {
   return (
     <div className="space-y-6">
       {/* Quick Stats */}
@@ -181,7 +201,7 @@ function OverviewTab() {
           Daily Reading This Week
         </h2>
         <ResponsiveContainer width="100%" height={220}>
-          <BarChart data={mockWeeklyProgress}>
+          <BarChart data={weeklyProgress}>
             <CartesianGrid strokeDasharray="3 3" stroke="#E5E7EB" />
             <XAxis dataKey="day" stroke="#9CA3AF" fontSize={12} />
             <YAxis stroke="#9CA3AF" fontSize={12} />
@@ -199,7 +219,7 @@ function OverviewTab() {
           Monthly Growth Trends
         </h2>
         <ResponsiveContainer width="100%" height={250}>
-          <LineChart data={mockMonthlyProgress}>
+          <LineChart data={monthlyProgress}>
             <CartesianGrid strokeDasharray="3 3" stroke="#E5E7EB" />
             <XAxis dataKey="week" stroke="#9CA3AF" fontSize={12} />
             <YAxis stroke="#9CA3AF" fontSize={12} />
@@ -231,7 +251,7 @@ function OverviewTab() {
 }
 
 /* ========== READING TAB ========== */
-function ReadingTab() {
+function ReadingTab({ child, weeklyProgress = [] }) {
   const readingActivity = [
     { date: "Feb 6", text: "The Water Cycle", duration: "32 min", sentences: 12, rereads: 2 },
     { date: "Feb 5", text: "The Water Cycle", duration: "45 min", sentences: 12, rereads: 3 },
@@ -312,7 +332,7 @@ function ReadingTab() {
           Reading Minutes This Week
         </h2>
         <ResponsiveContainer width="100%" height={220}>
-          <BarChart data={mockWeeklyProgress}>
+          <BarChart data={weeklyProgress}>
             <CartesianGrid strokeDasharray="3 3" stroke="#E5E7EB" />
             <XAxis dataKey="day" stroke="#9CA3AF" fontSize={12} />
             <YAxis stroke="#9CA3AF" fontSize={12} />
@@ -328,7 +348,14 @@ function ReadingTab() {
 }
 
 /* ========== VOCABULARY TAB ========== */
-function VocabularyTab() {
+function VocabularyTab({ monthlyProgress = [] }) {
+  const mockVocabulary = [ // Fallback mock for vocab in demo mode
+    { id: "v1", word: "Evaporation", definition: "When water turns into gas from heat", mastery: 80, audioUrl: null },
+    { id: "v2", word: "Condensation", definition: "When gas turns back into water drops", mastery: 65, audioUrl: null },
+    { id: "v3", word: "Precipitation", definition: "Rain, snow, or hail falling from clouds", mastery: 45, audioUrl: null },
+    { id: "v4", word: "Ecosystem", definition: "A community of living things in one place", mastery: 90, audioUrl: null },
+  ];
+
   const mastered = mockVocabulary.filter((v) => v.mastery >= 80);
   const learning = mockVocabulary.filter((v) => v.mastery >= 50 && v.mastery < 80);
   const needsWork = mockVocabulary.filter((v) => v.mastery < 50);
@@ -408,7 +435,7 @@ function VocabularyTab() {
           Vocabulary Growth Over Time
         </h2>
         <ResponsiveContainer width="100%" height={220}>
-          <LineChart data={mockMonthlyProgress}>
+          <LineChart data={monthlyProgress}>
             <CartesianGrid strokeDasharray="3 3" stroke="#E5E7EB" />
             <XAxis dataKey="week" stroke="#9CA3AF" fontSize={12} />
             <YAxis stroke="#9CA3AF" fontSize={12} />
@@ -462,7 +489,18 @@ function VocabularyTab() {
 }
 
 /* ========== QUIZZES TAB ========== */
-function QuizzesTab() {
+function QuizzesTab({ child, weeklyProgress = [] }) {
+  const mockQuizzes = [
+    {
+      id: "q1",
+      title: "Water Cycle Quiz",
+      type: "mcq",
+      totalQuestions: 3,
+      bestScore: 2,
+      attempts: 1,
+    },
+  ];
+
   const quiz = mockQuizzes[0];
   const scorePercentage = Math.round((quiz.bestScore / quiz.totalQuestions) * 100);
 
@@ -530,7 +568,7 @@ function QuizzesTab() {
           Comprehension Score Trend
         </h2>
         <ResponsiveContainer width="100%" height={220}>
-          <LineChart data={mockWeeklyProgress}>
+          <LineChart data={weeklyProgress}>
             <CartesianGrid strokeDasharray="3 3" stroke="#E5E7EB" />
             <XAxis dataKey="day" stroke="#9CA3AF" fontSize={12} />
             <YAxis stroke="#9CA3AF" fontSize={12} />
@@ -563,12 +601,23 @@ function QuizzesTab() {
 }
 
 /* ========== MESSAGES TAB ========== */
-function MessagesTab() {
+function MessagesTab({ messages = [] }) {
   const [newMessage, setNewMessage] = useState("");
+  const [localMessages, setLocalMessages] = useState(messages);
 
   const handleSend = () => {
     if (!newMessage.trim()) return;
-    // In a real app this would POST to the API
+    setLocalMessages((prev) => [
+      ...prev,
+      {
+        id: `local-${Date.now()}`,
+        from: "You (Parent)",
+        fromRole: "parent",
+        message: newMessage.trim(),
+        timestamp: new Date().toISOString(),
+        read: true,
+      },
+    ]);
     setNewMessage("");
   };
 
@@ -582,7 +631,7 @@ function MessagesTab() {
 
         {/* Messages list */}
         <div className="space-y-3 mb-6 max-h-96 overflow-y-auto">
-          {mockMessages.map((m) => {
+          {localMessages.map((m) => {
             const isFromTeacher = m.fromRole === "teacher";
             return (
               <div
@@ -621,7 +670,8 @@ function MessagesTab() {
           />
           <button
             onClick={handleSend}
-            className="px-5 py-3 rounded-xl bg-primary text-white font-medium hover:bg-primary-dark transition-colors flex items-center gap-2"
+            disabled={!newMessage.trim()}
+            className="px-5 py-3 rounded-xl bg-primary text-white font-medium hover:bg-primary-dark transition-colors flex items-center gap-2 disabled:opacity-40"
           >
             <Send className="w-4 h-4" />
             Send

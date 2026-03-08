@@ -5,6 +5,7 @@ import StudentDashboard from "../pages/StudentDashboard";
 import TeacherDashboard from "../pages/TeacherDashboard";
 import ParentDashboard from "../pages/ParentDashboard";
 import Settings from "../pages/Settings";
+import ChatAssistant from "../pages/ChatAssistant";
 import ProtectedRoute from "../components/ProtectedRoute";
 
 export default function AppRouter() {
@@ -37,15 +38,23 @@ export default function AppRouter() {
             </ProtectedRoute>
           }
         />
-        <Route
-          path="/settings"
-          element={
-            <ProtectedRoute>
-              <Settings />
-            </ProtectedRoute>
-          }
-        />
-      </Routes>
-    </BrowserRouter>
-  );
-}
+          <Route
+            path="/settings"
+            element={
+              <ProtectedRoute>
+                <Settings />
+              </ProtectedRoute>
+            }
+          />
+          <Route
+            path="/chat"
+            element={
+              <ProtectedRoute>
+                <ChatAssistant />
+              </ProtectedRoute>
+            }
+          />
+        </Routes>
+      </BrowserRouter>
+    );
+  }

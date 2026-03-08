@@ -39,6 +39,8 @@ class StudentProfile(Base):
     parent_id = Column(Integer, ForeignKey("parent_profiles.id"), nullable=True)
 
     user = relationship("User", back_populates="student_profile")
+    teacher = relationship("TeacherProfile", back_populates="students", foreign_keys=[teacher_id])
+    parent = relationship("ParentProfile", back_populates="students", foreign_keys=[parent_id])
     sessions = relationship("LearningSession", back_populates="student")
     quiz_results = relationship("QuizResult", back_populates="student")
 

@@ -3,14 +3,43 @@ from typing import Any
 from fastapi import APIRouter, Depends, HTTPException, status
 from fastapi.security import OAuth2PasswordRequestForm
 from sqlalchemy.orm import Session
+from sqlalchemy.exc import IntegrityError, SQLAlchemyError
 from app.api import deps
-from app.core import security
+from pydantic import BaseModel
+from app.core import security, cognito
 from app.core.config import settings
 from app.core.database import get_db
 from app.models import database as models
 from app.schemas import schemas
 
 router = APIRouter()
+
+VALID_ROLE_VALUES = {role.value for role in models.UserRole}
+
+
+def _prepare_user_for_response(db: Session, user: models.User) -> models.User:
+    """Normalize legacy user rows so response_model validation does not fail."""
+    changed = False
+
+    # Some legacy rows may contain enum repr values or invalid text.
+    if user.role not in VALID_ROLE_VALUES:
+        user.role = models.UserRole.STUDENT.value
+        changed = True
+
+    # Pydantic response model expects a valid email format.
+    if not user.email or "@" not in user.email:
+        raise HTTPException(status_code=400, detail="Cognito profile does not contain a valid email.")
+
+    if changed:
+        db.add(user)
+        db.commit()
+        db.refresh(user)
+
+    return user
+
+class SyncUserRequest(BaseModel):
+    role: models.UserRole
+    full_name: str
 
 @router.post("/login", response_model=schemas.Token)
 def login_access_token(
@@ -34,46 +63,59 @@ def login_access_token(
         "user": user
     }
 
-@router.post("/register", response_model=schemas.UserSchema)
-def create_user(
+@router.post("/sync", response_model=schemas.UserSchema)
+def sync_cognito_user(
     *,
     db: Session = Depends(get_db),
-    user_in: schemas.UserCreate
+    sync_req: SyncUserRequest,
+    token: str = Depends(deps.reusable_oauth2)
 ) -> Any:
     """
-    Create new user.
+    Sync a newly registered Amazon Cognito user into the local SQLite DB.
+    Validates the token from Cognito first.
     """
-    user = db.query(models.User).filter(models.User.email == user_in.email).first()
+    try:
+        claims = cognito.verify_cognito_token(token)
+        email = claims.get("email")
+        if not email:
+            username = claims.get("username")
+            # Cognito access-token username can be a UUID, not an email.
+            # Only use it when it looks like an email to keep schema/DB consistent.
+            if username and "@" in username:
+                email = username
+            
+        if not email:
+            raise HTTPException(status_code=400, detail="Token missing email claim")
+    except Exception as e:
+         raise HTTPException(status_code=401, detail=f"Invalid Cognito token: {e}")
+
+    user = db.query(models.User).filter(models.User.email == email).first()
     if user:
-        raise HTTPException(
-            status_code=400,
-            detail="The user with this email already exists in the system.",
-        )
+        return _prepare_user_for_response(db, user) # Already synced
     
     db_obj = models.User(
-        email=user_in.email,
-        hashed_password=security.get_password_hash(user_in.password),
-        full_name=user_in.full_name,
-        role=user_in.role,
-        is_active=user_in.is_active,
+        email=email,
+        hashed_password="COGNITO_MANAGED", # Password is in Cognito
+        full_name=sync_req.full_name,
+        role=sync_req.role.value,
+        is_active=True,
     )
     db.add(db_obj)
-    db.commit()
-    db.refresh(db_obj)
+    try:
+        db.commit()
+        db.refresh(db_obj)
+    except IntegrityError:
+        db.rollback()
+        # Handle race condition where another request inserted the same user.
+        existing = db.query(models.User).filter(models.User.email == email).first()
+        if existing:
+            return existing
+        raise HTTPException(status_code=409, detail="User already exists")
+    except SQLAlchemyError as e:
+        db.rollback()
+        raise HTTPException(status_code=500, detail=f"Database error during user sync: {str(e)}")
     
-    # Initialize profile based on role
-    if user_in.role == models.UserRole.STUDENT:
-        profile = models.StudentProfile(user_id=db_obj.id)
-        db.add(profile)
-    elif user_in.role == models.UserRole.TEACHER:
-        profile = models.TeacherProfile(user_id=db_obj.id)
-        db.add(profile)
-    elif user_in.role == models.UserRole.PARENT:
-        profile = models.ParentProfile(user_id=db_obj.id)
-        db.add(profile)
-    
-    db.commit()
-    return db_obj
+    return _prepare_user_for_response(db, db_obj)
 
 @router.get("/me", response_model=schemas.UserSchema)
 def read_user_me(

@@ -1,5 +1,6 @@
 from fastapi import APIRouter, HTTPException, Body, UploadFile, File, Depends
 from typing import List, Dict, Any, Optional
+from pydantic import BaseModel
 from app.services.ai import ai_service
 from app.api import deps
 from app.models import database as models
@@ -8,7 +9,38 @@ import PyPDF2
 import io
 import boto3
 
+# Mock Database objects for Hackathon
+MOCK_LIBRARY = [
+    {
+        "id": "t1",
+        "title": "The Water Cycle",
+        "originalText": "Water moves in a continuous cycle between the Earth's surface and the atmosphere. The sun heats water in oceans, lakes, and rivers, causing it to evaporate into water vapor. This vapor rises into the atmosphere where it cools and condenses into tiny water droplets, forming clouds. When these droplets combine and become heavy enough, they fall back to Earth as precipitation — rain, snow, sleet, or hail. The water then collects in bodies of water or seeps into the ground, and the cycle begins again.",
+        "concepts": ["evaporation", "condensation", "precipitation", "water cycle"],
+        "readCount": 3,
+        "lastRead": "2026-02-05",
+    },
+    {
+        "id": "t2",
+        "title": "Friendly Letter",
+        "originalText": "A friendly letter is a type of personal letter written to someone you know well, such as a friend or family member. It has five parts: the heading with your address and date, the greeting which says hello, the body where you share your news and thoughts, the closing which says goodbye, and your signature. Unlike formal letters, friendly letters use a warm, casual tone.",
+        "concepts": ["heading", "greeting", "body", "closing", "signature"],
+        "readCount": 1,
+        "lastRead": "2026-02-04",
+    }
+]
+
+MOCK_VOCAB = [
+  {"id": "v1", "word": "Evaporation", "definition": "When water turns into gas from heat", "mastery": 80},
+  {"id": "v2", "word": "Condensation", "definition": "When gas turns back into water drops", "mastery": 65},
+  {"id": "v3", "word": "Precipitation", "definition": "Rain, snow, or hail falling from clouds", "mastery": 45},
+]
+
 router = APIRouter()
+
+@router.get("/library")
+async def get_library(current_user: models.User = Depends(deps.get_current_active_user)):
+    """Returns the reading library materials."""
+    return {"texts": MOCK_LIBRARY, "vocabulary": MOCK_VOCAB}
 
 @router.post("/simplify")
 async def simplify_text(
@@ -106,3 +138,18 @@ async def extract_concepts(
             {"word": "lexilearn", "definition": "learning platform for dyslexia"}
         ]
     }
+
+class ChatRequest(BaseModel):
+    message: str
+    history: Optional[List[Dict[str, str]]] = None
+
+@router.post("/chat")
+async def chat_with_ai(
+    req: ChatRequest,
+    current_user: models.User = Depends(deps.get_current_active_user)
+):
+    """
+    General-purpose AI chat for dyslexia support. Uses Bedrock/Gemini.
+    """
+    answer = await ai_service.chat(req.message, req.history or [])
+    return {"reply": answer}
