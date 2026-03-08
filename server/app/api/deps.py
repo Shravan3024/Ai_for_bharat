@@ -17,6 +17,31 @@ reusable_oauth2 = OAuth2PasswordBearer(
 def get_current_user(
     db: Session = Depends(get_db), token: str = Depends(reusable_oauth2)
 ) -> models.User:
+    # Demo token bypass for hackathon judges
+    if token and token.startswith("demo-token-"):
+        role_map = {
+            "demo-token-student": ("aditi@demo.com", "Aditi Sharma", models.UserRole.STUDENT),
+            "demo-token-teacher": ("sharma@demo.com", "Mrs. Sharma", models.UserRole.TEACHER),
+            "demo-token-parent":  ("priya@demo.com", "Priya Sharma", models.UserRole.PARENT),
+        }
+        info = role_map.get(token)
+        if info:
+            email, name, role = info
+            user = db.query(models.User).filter(models.User.email == email).first()
+            if not user:
+                from app.core.security import get_password_hash
+                user = models.User(
+                    email=email,
+                    full_name=name,
+                    hashed_password=get_password_hash("demo123"),
+                    role=role,
+                    is_active=True,
+                )
+                db.add(user)
+                db.commit()
+                db.refresh(user)
+            return user
+
     try:
         # Verify using Cognito JWKS
         claims = cognito.verify_cognito_token(token)
