@@ -395,22 +395,22 @@ export function Footer() {
                 AI-powered reading support designed with empathy for dyslexic learners.
               </p>
             </div>
-          <div>
-            <h4 className="text-white font-semibold mb-3">Platform</h4>
-            <ul className="space-y-2 text-gray-400 text-sm">
-              <li><Link to="/#features" className="hover:text-white transition-colors">Features</Link></li>
-              <li><Link to="/#how-it-works" className="hover:text-white transition-colors">How It Works</Link></li>
-              <li><Link to="/login" className="hover:text-white transition-colors">Get Started</Link></li>
-            </ul>
-          </div>
-          <div>
-            <h4 className="text-white font-semibold mb-3">For Users</h4>
-            <ul className="space-y-2 text-gray-400 text-sm">
-              <li><Link to="/login" className="hover:text-white transition-colors">Student Login</Link></li>
-              <li><Link to="/login" className="hover:text-white transition-colors">Teacher Login</Link></li>
-              <li><Link to="/login" className="hover:text-white transition-colors">Parent Login</Link></li>
-            </ul>
-          </div>
+            <div>
+              <h4 className="text-white font-semibold mb-3">Platform</h4>
+              <ul className="space-y-2 text-gray-400 text-sm">
+                <li><Link to="/#features" className="nav-link hover:text-white transition-colors">Features</Link></li>
+                <li><Link to="/#how-it-works" className="nav-link hover:text-white transition-colors">How It Works</Link></li>
+                <li><Link to="/login" className="nav-link hover:text-white transition-colors">Get Started</Link></li>
+              </ul>
+            </div>
+            <div>
+              <h4 className="text-white font-semibold mb-3">For Users</h4>
+              <ul className="space-y-2 text-gray-400 text-sm">
+                <li><Link to="/login" className="nav-link hover:text-white transition-colors">Student Login</Link></li>
+                <li><Link to="/login" className="nav-link hover:text-white transition-colors">Teacher Login</Link></li>
+                <li><Link to="/login" className="nav-link hover:text-white transition-colors">Parent Login</Link></li>
+              </ul>
+            </div>
           <div>
             <h4 className="text-white font-semibold mb-3">Accessibility</h4>
             <ul className="space-y-2 text-gray-400 text-sm">

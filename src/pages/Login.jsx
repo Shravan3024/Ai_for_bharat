@@ -61,30 +61,34 @@ export default function Login() {
     e.preventDefault();
     setError("");
 
-    if (!selectedRole) {
-      setError("Please select your role first.");
-      return;
-    }
+    // During confirmation step, role/email/password validations don't apply
+    if (!needsConfirmation) {
+      if (!selectedRole) {
+        setError("Please select your role first.");
+        return;
+      }
 
-    if (!form.email || !form.password) {
-      setError("Please fill in all fields.");
-      return;
-    }
+      if (!form.email || !form.password) {
+        setError("Please fill in all fields.");
+        return;
+      }
 
-    if (isRegister && !form.name) {
-      setError("Please enter your name.");
-      return;
+      if (isRegister && !form.name) {
+        setError("Please enter your name.");
+        return;
+      }
     }
 
     try {
-      const roleInfo = roles.find((r) => r.key === selectedRole);
-      
+      const roleInfo = roles.find((r) => r.key === registeredRole || r.key === selectedRole);
+
       if (needsConfirmation) {
-         await useAuthStore.getState().confirmRegistration(registeredEmail, form.code, registeredRole, registeredName);
-         // Log in using the password saved during registration
-         await login(registeredRole, registeredEmail, registeredPassword);
-         navigate(roleInfo.redirect);
-         return;
+        await useAuthStore.getState().confirmRegistration(registeredEmail, form.code, registeredRole, registeredName);
+        // Login to Cognito first so we have the token, then explicitly sync the user
+        // into local SQLite before calling getMe() inside login()
+        await useAuthStore.getState().loginAndSync(registeredRole, registeredEmail, registeredPassword, registeredName);
+        navigate(roleInfo.redirect);
+        return;
       }
 
       if (isRegister) {
@@ -123,13 +127,13 @@ export default function Login() {
     <div className="min-h-screen bg-gradient-to-b from-cream to-mint flex flex-col">
       {/* Header */}
       <div className="px-6 py-4">
-        <Link
-          to="/"
-          className="inline-flex items-center gap-2 text-text-secondary hover:text-text transition-colors font-medium"
-        >
-          <ArrowLeft className="w-4 h-4" />
-          Back to Home
-        </Link>
+          <Link
+            to="/"
+            className="nav-link inline-flex items-center gap-2 text-text-secondary hover:text-text transition-colors font-medium"
+          >
+            <ArrowLeft className="w-4 h-4" />
+            Back to Home
+          </Link>
       </div>
 
       {/* Main */}
@@ -137,10 +141,10 @@ export default function Login() {
         <div className="w-full max-w-lg">
           {/* Logo */}
           <div className="text-center mb-8">
-            <Link
-              to="/"
-              className="inline-flex items-center gap-2 text-primary font-bold text-2xl"
-            >
+              <Link
+                to="/"
+                className="nav-link inline-flex items-center gap-2 text-primary font-bold text-2xl"
+              >
               <img
                 src="/logo.png"
                 alt="LexiLearn Logo"

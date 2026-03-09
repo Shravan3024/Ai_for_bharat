@@ -115,29 +115,38 @@ export default function Settings() {
               </p>
             </div>
 
-            {/* High Contrast */}
-            <div className="flex items-center justify-between">
-              <div>
-                <p className="font-medium text-text">High Contrast Mode</p>
-                <p className="text-sm text-text-muted">
-                  Increases contrast for better readability
-                </p>
+              {/* High Contrast */}
+              <div className="flex items-center justify-between gap-4">
+                <div className="flex-1 min-w-0">
+                  <p className="font-medium text-text flex items-center gap-2 flex-wrap">
+                    <Sun className="w-4 h-4 text-accent flex-shrink-0" />
+                    High Contrast Mode
+                    {highContrast && (
+                      <span className="text-xs font-semibold px-2 py-0.5 rounded-full bg-accent/20 text-accent border border-accent/40 leading-tight">
+                        ON
+                      </span>
+                    )}
+                  </p>
+                  <p className="text-sm text-text-muted">
+                    Deep navy background with warm cream text — easier on the eyes
+                  </p>
+                </div>
+                <button
+                  type="button"
+                  onClick={toggleHighContrast}
+                  style={{ backgroundColor: highContrast ? "#FFD700" : "#E5E7EB" }}
+                  className="relative inline-flex w-14 h-8 flex-shrink-0 cursor-pointer rounded-full border-2 border-transparent transition-colors duration-200 ease-in-out focus:outline-none focus-visible:ring-2 focus-visible:ring-accent focus-visible:ring-offset-2"
+                  role="switch"
+                  aria-checked={highContrast}
+                  aria-label="Toggle high contrast mode"
+                >
+                  <span
+                    aria-hidden="true"
+                    style={{ transform: highContrast ? "translateX(24px)" : "translateX(0px)" }}
+                    className="pointer-events-none inline-block h-7 w-7 rounded-full bg-white shadow ring-0 transition duration-200 ease-in-out"
+                  />
+                </button>
               </div>
-              <button
-                onClick={toggleHighContrast}
-                className={`relative w-14 h-8 rounded-full transition-colors ${
-                  highContrast ? "bg-primary" : "bg-border"
-                }`}
-                role="switch"
-                aria-checked={highContrast}
-              >
-                <span
-                  className={`absolute top-1 w-6 h-6 rounded-full bg-white shadow transition-transform ${
-                    highContrast ? "translate-x-7" : "translate-x-1"
-                  }`}
-                />
-              </button>
-            </div>
 
               {/* Audio */}
               <div className="flex items-center justify-between">
@@ -148,17 +157,17 @@ export default function Settings() {
                   </p>
                 </div>
                 <button
+                  type="button"
                   onClick={toggleAudio}
-                  className={`relative w-14 h-8 rounded-full transition-colors ${
-                    audioEnabled ? "bg-success" : "bg-border"
-                  }`}
+                  style={{ backgroundColor: audioEnabled ? "#10B981" : "#E5E7EB" }}
+                  className="relative inline-flex w-14 h-8 flex-shrink-0 cursor-pointer rounded-full border-2 border-transparent transition-colors duration-200 ease-in-out focus:outline-none focus-visible:ring-2 focus-visible:ring-success focus-visible:ring-offset-2"
                   role="switch"
                   aria-checked={audioEnabled}
                 >
                   <span
-                    className={`absolute top-1 w-6 h-6 rounded-full bg-white shadow transition-transform ${
-                      audioEnabled ? "translate-x-7" : "translate-x-1"
-                    }`}
+                    aria-hidden="true"
+                    style={{ transform: audioEnabled ? "translateX(24px)" : "translateX(0px)" }}
+                    className="pointer-events-none inline-block h-7 w-7 rounded-full bg-white shadow ring-0 transition duration-200 ease-in-out"
                   />
                 </button>
               </div>
@@ -175,17 +184,17 @@ export default function Settings() {
                   </p>
                 </div>
                 <button
+                  type="button"
                   onClick={toggleDyslexicFont}
-                  className={`relative w-14 h-8 rounded-full transition-colors ${
-                    dyslexicFont ? "bg-secondary" : "bg-border"
-                  }`}
+                  style={{ backgroundColor: dyslexicFont ? "#8B5CF6" : "#E5E7EB" }}
+                  className="relative inline-flex w-14 h-8 flex-shrink-0 cursor-pointer rounded-full border-2 border-transparent transition-colors duration-200 ease-in-out focus:outline-none focus-visible:ring-2 focus-visible:ring-secondary focus-visible:ring-offset-2"
                   role="switch"
                   aria-checked={dyslexicFont}
                 >
                   <span
-                    className={`absolute top-1 w-6 h-6 rounded-full bg-white shadow transition-transform ${
-                      dyslexicFont ? "translate-x-7" : "translate-x-1"
-                    }`}
+                    aria-hidden="true"
+                    style={{ transform: dyslexicFont ? "translateX(24px)" : "translateX(0px)" }}
+                    className="pointer-events-none inline-block h-7 w-7 rounded-full bg-white shadow ring-0 transition duration-200 ease-in-out"
                   />
                 </button>
               </div>
@@ -221,20 +230,33 @@ export default function Settings() {
           </div>
         </section>
 
-        {/* Preview */}
-        <section className="bg-surface rounded-2xl shadow-card p-6">
-          <h2 className="text-xl font-semibold text-text mb-4">Preview</h2>
-          <div className="bg-cream rounded-xl p-5">
-            <p className="reading-text" style={{ fontSize: `${fontSize}px` }}>
-              Water moves around in a circle. The sun makes water warm. Warm
-              water goes up into the sky as gas. The gas makes clouds. Clouds
-              drop rain and snow. Rain goes back to the lakes.
+          {/* Preview */}
+          <section className="bg-surface rounded-2xl shadow-card p-6">
+            <h2 className="text-xl font-semibold text-text mb-4">Preview</h2>
+            <div
+              className="rounded-xl p-5 transition-colors duration-300"
+              style={
+                highContrast
+                  ? { backgroundColor: "#161B22", border: "1.5px solid #F0E68C" }
+                  : { backgroundColor: "var(--color-cream, #FEFCE8)" }
+              }
+            >
+              <p
+                className="reading-text"
+                style={{
+                  fontSize: `${fontSize}px`,
+                  color: highContrast ? "#F5F0DC" : undefined,
+                }}
+              >
+                Water moves around in a circle. The sun makes water warm. Warm
+                water goes up into the sky as gas. The gas makes clouds. Clouds
+                drop rain and snow. Rain goes back to the lakes.
+              </p>
+            </div>
+            <p className="text-xs text-text-muted mt-3">
+              This preview uses your current font size and accessibility settings.
             </p>
-          </div>
-          <p className="text-xs text-text-muted mt-3">
-            This preview uses your current font size and accessibility settings.
-          </p>
-        </section>
+          </section>
       </div>
     </div>
   );

@@ -105,14 +105,304 @@ body {
   word-spacing: 0.1em;
 }
 
-/* High contrast mode */
+/* ==============================================
+   HIGH CONTRAST MODE — Dyslexia-Friendly
+   Palette: Deep Navy bg + Bright Cream text
+   WCAG AAA (contrast ratio ≥ 7:1 throughout)
+   ============================================== */
+
+/* ── Core tokens ── */
+[data-theme="high-contrast"] {
+  --hc-bg:          #0D1117;   /* deep navy — less harsh than pure black */
+  --hc-surface:     #161B22;   /* card surfaces */
+  --hc-surface-alt: #1C2128;   /* input / tag backgrounds */
+  --hc-border:      #F0E68C;   /* khaki gold — visible & warm */
+  --hc-text:        #F5F0DC;   /* warm cream — no vibration vs navy */
+  --hc-text-muted:  #C8C0A0;   /* dimmed cream for secondary text */
+  --hc-accent:      #FFD700;   /* gold for interactive / highlight */
+  --hc-accent-hover:#FFE55C;
+  --hc-success:     #4ADE80;   /* green — passes 4.5:1 on navy */
+  --hc-error:       #FF6B6B;
+  --hc-link:        #7EC8F4;   /* light blue links */
+  --hc-focus:       #FFD700;   /* gold focus ring */
+}
+
+/* ── Document base ── */
 [data-theme="high-contrast"] body {
-  background-color: #000;
-  color: #fff;
+  background-color: var(--hc-bg) !important;
+  color: var(--hc-text) !important;
+  text-shadow: none !important;
+}
+
+/* ── Backgrounds ── */
+[data-theme="high-contrast"] .bg-cream,
+[data-theme="high-contrast"] .bg-lavender,
+[data-theme="high-contrast"] .bg-mint,
+[data-theme="high-contrast"] .bg-peach,
+[data-theme="high-contrast"] .bg-sky,
+[data-theme="high-contrast"] .min-h-screen {
+  background-color: var(--hc-bg) !important;
+}
+
+/* surface-dim = slightly elevated layer (table headers, tag inputs, etc.) */
+[data-theme="high-contrast"] .bg-surface-dim {
+  background-color: var(--hc-surface-alt) !important;
+  border: 1px solid var(--hc-border) !important;
+}
+
+/* Hero gradient → solid navy */
+[data-theme="high-contrast"] [class*="bg-gradient"] {
+  background: var(--hc-bg) !important;
+  background-image: none !important;
 }
 
 [data-theme="high-contrast"] .bg-surface {
-  background-color: #1a1a1a;
+  background-color: var(--hc-surface) !important;
+  border: 1.5px solid var(--hc-border) !important;
+}
+
+/* ── Text colours ── */
+[data-theme="high-contrast"] .text-text,
+[data-theme="high-contrast"] h1,
+[data-theme="high-contrast"] h2,
+[data-theme="high-contrast"] h3,
+[data-theme="high-contrast"] h4,
+[data-theme="high-contrast"] p,
+[data-theme="high-contrast"] label {
+  color: var(--hc-text) !important;
+}
+
+[data-theme="high-contrast"] .text-text-secondary,
+[data-theme="high-contrast"] .text-text-muted {
+  color: var(--hc-text-muted) !important;
+}
+
+/* Coloured keyword spans in hero heading — distinct, warm, high-contrast */
+[data-theme="high-contrast"] .text-primary {
+  color: #FFD700 !important;   /* gold — "Kind" */
+}
+
+[data-theme="high-contrast"] .text-secondary {
+  color: #7EC8F4 !important;   /* sky blue — "Simple" */
+}
+
+[data-theme="high-contrast"] .text-success {
+  color: #4ADE80 !important;   /* soft green — "Personal" */
+}
+
+[data-theme="high-contrast"] .text-accent {
+  color: #FFD700 !important;
+}
+
+[data-theme="high-contrast"] .text-error {
+  color: var(--hc-error) !important;
+}
+
+/* ── Borders ── */
+[data-theme="high-contrast"] .border-border,
+[data-theme="high-contrast"] .border,
+[data-theme="high-contrast"] [class*="border-"] {
+  border-color: var(--hc-border) !important;
+}
+
+/* ── Cards & sections ── */
+[data-theme="high-contrast"] section,
+[data-theme="high-contrast"] .bg-surface.rounded-2xl,
+[data-theme="high-contrast"] .bg-surface.rounded-xl,
+[data-theme="high-contrast"] .shadow-card {
+  background-color: var(--hc-surface) !important;
+  border: 1.5px solid var(--hc-border) !important;
+  box-shadow: none !important;
+}
+
+/* ── Buttons (primary / ghost) ── */
+[data-theme="high-contrast"] button,
+[data-theme="high-contrast"] [role="button"] {
+  color: var(--hc-text) !important;
+  border-color: var(--hc-border) !important;
+  text-shadow: none !important;
+}
+
+/* Primary filled buttons */
+[data-theme="high-contrast"] .bg-primary,
+[data-theme="high-contrast"] .bg-primary-dark,
+[data-theme="high-contrast"] [class*="bg-primary"] {
+  background-color: var(--hc-accent) !important;
+  color: #0D1117 !important;
+  border: 2px solid var(--hc-accent) !important;
+}
+
+[data-theme="high-contrast"] .bg-primary:hover,
+[data-theme="high-contrast"] [class*="bg-primary"]:hover {
+  background-color: var(--hc-accent-hover) !important;
+}
+
+/* Ghost / outline buttons */
+[data-theme="high-contrast"] .bg-surface-dim {
+  background-color: var(--hc-surface-alt) !important;
+  border: 1.5px solid var(--hc-border) !important;
+}
+
+/* ── Inputs & textareas ── */
+[data-theme="high-contrast"] input,
+[data-theme="high-contrast"] textarea,
+[data-theme="high-contrast"] select {
+  background-color: var(--hc-surface-alt) !important;
+  color: var(--hc-text) !important;
+  border: 2px solid var(--hc-border) !important;
+  caret-color: var(--hc-accent) !important;
+}
+
+[data-theme="high-contrast"] input::placeholder,
+[data-theme="high-contrast"] textarea::placeholder {
+  color: var(--hc-text-muted) !important;
+  opacity: 1 !important;
+}
+
+/* ── Range sliders ── */
+[data-theme="high-contrast"] input[type="range"] {
+  accent-color: var(--hc-accent) !important;
+  border: none !important;
+}
+
+/* ── Focus rings ── */
+[data-theme="high-contrast"] *:focus-visible {
+  outline: 3px solid var(--hc-focus) !important;
+  outline-offset: 3px !important;
+}
+
+/* ── Navbar ── */
+[data-theme="high-contrast"] nav,
+[data-theme="high-contrast"] header {
+  background-color: var(--hc-surface) !important;
+  border-bottom: 2px solid var(--hc-border) !important;
+  box-shadow: none !important;
+}
+
+/* ── Links — bare inline links only ── */
+[data-theme="high-contrast"] a:not(.nav-link) {
+  color: var(--hc-link) !important;
+  text-decoration: underline !important;
+  text-decoration-thickness: 2px !important;
+}
+
+/* ── All nav-link tagged elements — never look like hyperlinks ── */
+[data-theme="high-contrast"] .nav-link {
+  text-decoration: none !important;
+  background-color: transparent !important;
+}
+
+/* Nav items in the top navbar — warm muted text, hover brightens */
+[data-theme="high-contrast"] nav .nav-link {
+  color: var(--hc-text-muted) !important;
+}
+
+[data-theme="high-contrast"] nav .nav-link:hover {
+  color: var(--hc-text) !important;
+  background-color: var(--hc-surface-alt) !important;
+}
+
+/* Logo link — keep gold accent */
+[data-theme="high-contrast"] nav .nav-link[class*="text-primary"],
+[data-theme="high-contrast"] .nav-link[class*="text-primary"][class*="font-bold"] {
+  color: var(--hc-accent) !important;
+}
+
+/* "Get Started" filled pill button — gold bg, dark text */
+[data-theme="high-contrast"] .nav-link[class*="bg-primary"] {
+  background-color: var(--hc-accent) !important;
+  color: #0D1117 !important;
+  text-decoration: none !important;
+}
+
+[data-theme="high-contrast"] .nav-link[class*="bg-primary"]:hover {
+  background-color: #e6c000 !important;
+  color: #0D1117 !important;
+}
+
+/* Footer nav-links — stay cream/muted on dark footer, no underline */
+[data-theme="high-contrast"] footer .nav-link,
+[data-theme="high-contrast"] [class*="bg-gray"] .nav-link {
+  color: #B0B8C4 !important;
+  text-decoration: none !important;
+}
+
+[data-theme="high-contrast"] footer .nav-link:hover,
+[data-theme="high-contrast"] [class*="bg-gray"] .nav-link:hover {
+  color: var(--hc-text) !important;
+  background-color: transparent !important;
+}
+
+/* ── Table / list row hover ── */
+[data-theme="high-contrast"] .hover\:bg-surface-dim:hover {
+  background-color: #222B38 !important;   /* visible but not jarring highlight */
+  border-left: 3px solid var(--hc-accent) !important;
+}
+
+/* Make sure text inside hovered rows stays readable */
+[data-theme="high-contrast"] .hover\:bg-surface-dim:hover .text-text,
+[data-theme="high-contrast"] .hover\:bg-surface-dim:hover p,
+[data-theme="high-contrast"] .hover\:bg-surface-dim:hover span {
+  color: var(--hc-text) !important;
+}
+
+/* Avatar initial inside hovered row */
+[data-theme="high-contrast"] .hover\:bg-surface-dim:hover .text-primary {
+  color: var(--hc-accent) !important;
+}
+
+/* ── Badges / pills ── */
+[data-theme="high-contrast"] [class*="bg-primary/"],
+[data-theme="high-contrast"] [class*="bg-success/"],
+[data-theme="high-contrast"] [class*="bg-warning/"],
+[data-theme="high-contrast"] [class*="bg-error/"],
+[data-theme="high-contrast"] [class*="bg-secondary/"],
+[data-theme="high-contrast"] [class*="bg-accent/"] {
+  background-color: var(--hc-surface-alt) !important;
+  border: 1.5px solid var(--hc-border) !important;
+  color: var(--hc-text) !important;
+}
+
+/* ── Avatar initials circle ── */
+[data-theme="high-contrast"] .bg-primary\/10 {
+  background-color: var(--hc-surface-alt) !important;
+  border: 2px solid var(--hc-accent) !important;
+}
+
+/* ── Shadows — remove all decorative shadows ── */
+[data-theme="high-contrast"] * {
+  box-shadow: none !important;
+  text-shadow: none !important;
+}
+
+/* Keep border on cards after shadow removal */
+[data-theme="high-contrast"] .shadow-card,
+[data-theme="high-contrast"] .shadow-elevated {
+  border: 1.5px solid var(--hc-border) !important;
+}
+
+/* ── Selection highlight ── */
+[data-theme="high-contrast"] ::selection {
+  background-color: var(--hc-accent) !important;
+  color: #0D1117 !important;
+}
+
+/* ── Scrollbar ── */
+[data-theme="high-contrast"] ::-webkit-scrollbar-track {
+  background: var(--hc-surface) !important;
+}
+
+[data-theme="high-contrast"] ::-webkit-scrollbar-thumb {
+  background: var(--hc-border) !important;
+}
+
+/* ── Toggle switch knob ── */
+[data-theme="high-contrast"] [role="switch"] {
+  border: 2px solid var(--hc-border) !important;
+}
+
+[data-theme="high-contrast"] [role="switch"] > span {
+  background-color: var(--hc-text) !important;
 }
 
 /* Reduced motion */

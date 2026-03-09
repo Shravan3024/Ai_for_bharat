@@ -102,6 +102,39 @@ export const useAuthStore = create((set) => ({
     });
   },
 
+  // Used after email confirmation: authenticates with Cognito, syncs user to SQLite, then fetches local profile.
+  loginAndSync: async (role, email, password, name) => {
+    set({ isLoading: true, error: null });
+    return new Promise((resolve, reject) => {
+      const authenticationDetails = new AuthenticationDetails({ Username: email, Password: password });
+      const cognitoUser = new CognitoUser({ Username: email, Pool: userPool });
+
+      cognitoUser.authenticateUser(authenticationDetails, {
+        onSuccess: async (result) => {
+          const token = result.getIdToken().getJwtToken();
+          localStorage.setItem("lexilearn_token", token);
+
+          try {
+            // Always sync first — this is safe; backend returns existing user if already synced
+            await apiService.syncCognitoUser({ full_name: name, role });
+            const user = await apiService.getMe();
+            set({ user, isAuthenticated: true, isLoading: false });
+            localStorage.setItem("lexilearn_user", JSON.stringify(user));
+            resolve(user);
+          } catch (err) {
+            const message = err?.message || "Failed to sync or load user profile after confirmation.";
+            set({ error: message, isLoading: false });
+            reject(new Error(message));
+          }
+        },
+        onFailure: (err) => {
+          set({ error: err.message || JSON.stringify(err), isLoading: false });
+          reject(err);
+        },
+      });
+    });
+  },
+
   confirmRegistration: async (email, code, role, name) => {
     set({ isLoading: true, error: null });
     return new Promise((resolve, reject) => {

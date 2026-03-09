@@ -1,4 +1,4 @@
-import { Link, useNavigate } from "react-router-dom";
+import { Link, useNavigate, useLocation } from "react-router-dom";
 import { useState } from "react";
 import { useAuthStore, useAccessibilityStore } from "../stores/authStore";
 import {
@@ -38,6 +38,21 @@ export default function Navbar() {
   const [mobileOpen, setMobileOpen] = useState(false);
   const [a11yOpen, setA11yOpen] = useState(false);
   const navigate = useNavigate();
+  const location = useLocation();
+
+  const scrollToFeatures = (e) => {
+    e.preventDefault();
+    if (location.pathname === "/") {
+      document.getElementById("features")?.scrollIntoView({ behavior: "smooth" });
+    } else {
+      navigate("/");
+      // wait for the landing page to mount, then scroll
+      setTimeout(() => {
+        document.getElementById("features")?.scrollIntoView({ behavior: "smooth" });
+      }, 300);
+    }
+    setMobileOpen(false);
+  };
 
   const handleLogout = () => {
     logout();
@@ -56,18 +71,18 @@ export default function Navbar() {
   return (
     <nav className="bg-surface border-b border-border sticky top-0 z-50">
       <div className="max-w-7xl mx-auto px-6 py-3 flex items-center justify-between">
-        {/* Logo */}
-        <Link
-          to={isAuthenticated ? dashboardPath : "/"}
-          className="flex items-center gap-2 text-primary font-bold text-xl"
-        >
-          <img
-            src="/logo.png"
-            alt="LexiLearn Logo"
-            className="w-10 h-10 object-contain"
-          />
-          <span>LexiLearn</span>
-        </Link>
+          {/* Logo */}
+          <Link
+            to={isAuthenticated ? dashboardPath : "/"}
+            className="nav-link flex items-center gap-2 text-primary font-bold text-xl"
+          >
+            <img
+              src="/logo.png"
+              alt="LexiLearn Logo"
+              className="w-10 h-10 object-contain"
+            />
+            <span>LexiLearn</span>
+          </Link>
 
         {/* Desktop Nav */}
         <div className="hidden md:flex items-center gap-4">
@@ -83,25 +98,25 @@ export default function Navbar() {
 
           {isAuthenticated ? (
             <>
-              <Link
-                to={dashboardPath}
-                className="px-3 py-2 rounded-lg text-text-secondary hover:bg-cream transition-colors text-sm font-medium"
-              >
-                Dashboard
-              </Link>
+                <Link
+                  to={dashboardPath}
+                  className="nav-link px-3 py-2 rounded-lg text-text-secondary hover:bg-cream transition-colors text-sm font-medium"
+                >
+                  Dashboard
+                </Link>
               {user?.role === "student" && (
                 <Link
                   to="/chat"
-                  className="flex items-center gap-1 px-3 py-2 rounded-lg text-text-secondary hover:bg-cream transition-colors text-sm font-medium"
+                  className="nav-link flex items-center gap-1 px-3 py-2 rounded-lg text-text-secondary hover:bg-cream transition-colors text-sm font-medium"
                 >
                   <Bot className="w-4 h-4" />
                   LexiBot
                 </Link>
               )}
               <Link
-                to="/settings"
-                className="px-3 py-2 rounded-lg text-text-secondary hover:bg-cream transition-colors text-sm font-medium"
-              >
+                  to="/settings"
+                  className="nav-link px-3 py-2 rounded-lg text-text-secondary hover:bg-cream transition-colors text-sm font-medium"
+                >
                 Settings
               </Link>
               {/* User info + role badge */}
@@ -128,25 +143,26 @@ export default function Navbar() {
             </>
           ) : (
             <>
-              <Link
-                to="/#features"
-                className="px-3 py-2 rounded-lg text-text-secondary hover:bg-cream transition-colors text-sm font-medium"
-              >
-                Features
-              </Link>
-              <Link
-                to="/login"
-                className="flex items-center gap-1 px-3 py-2 rounded-lg text-text-secondary hover:bg-cream transition-colors text-sm font-medium"
-              >
-                <LogIn className="w-4 h-4" />
-                Login
-              </Link>
-              <Link
-                to="/login"
-                className="px-5 py-2 rounded-full bg-primary text-white hover:bg-primary-dark transition-colors text-sm font-semibold"
-              >
-                Get Started
-              </Link>
+                  <a
+                    href="#features"
+                    onClick={scrollToFeatures}
+                    className="nav-link px-3 py-2 rounded-lg text-text-secondary hover:bg-cream transition-colors text-sm font-medium cursor-pointer"
+                  >
+                    Features
+                  </a>
+                <Link
+                  to="/login"
+                  className="nav-link flex items-center gap-1 px-3 py-2 rounded-lg text-text-secondary hover:bg-cream transition-colors text-sm font-medium"
+                >
+                  <LogIn className="w-4 h-4" />
+                  Login
+                </Link>
+                <Link
+                  to="/login"
+                  className="nav-link px-5 py-2 rounded-full bg-primary text-white hover:bg-primary-dark transition-colors text-sm font-semibold"
+                >
+                  Get Started
+                </Link>
             </>
           )}
         </div>
@@ -254,27 +270,27 @@ export default function Navbar() {
                 </div>
               )}
               <Link
-                to={dashboardPath}
-                onClick={() => setMobileOpen(false)}
-                className="block px-3 py-2 rounded-lg hover:bg-cream transition-colors font-medium"
-              >
-                Dashboard
-              </Link>
-              {user?.role === "student" && (
-                <Link
-                  to="/chat"
+                  to={dashboardPath}
                   onClick={() => setMobileOpen(false)}
-                  className="flex items-center gap-2 px-3 py-2 rounded-lg hover:bg-cream transition-colors font-medium"
+                  className="nav-link block px-3 py-2 rounded-lg hover:bg-cream transition-colors font-medium"
                 >
-                  <Bot className="w-4 h-4" />
-                  LexiBot
+                  Dashboard
                 </Link>
-              )}
-              <Link
-                to="/settings"
-                onClick={() => setMobileOpen(false)}
-                className="block px-3 py-2 rounded-lg hover:bg-cream transition-colors font-medium"
-              >
+                {user?.role === "student" && (
+                  <Link
+                    to="/chat"
+                    onClick={() => setMobileOpen(false)}
+                    className="nav-link flex items-center gap-2 px-3 py-2 rounded-lg hover:bg-cream transition-colors font-medium"
+                  >
+                    <Bot className="w-4 h-4" />
+                    LexiBot
+                  </Link>
+                )}
+                <Link
+                  to="/settings"
+                  onClick={() => setMobileOpen(false)}
+                  className="nav-link block px-3 py-2 rounded-lg hover:bg-cream transition-colors font-medium"
+                >
                 Settings
               </Link>
               <button
@@ -289,20 +305,20 @@ export default function Navbar() {
             </>
           ) : (
             <>
-              <Link
-                to="/login"
-                onClick={() => setMobileOpen(false)}
-                className="block px-3 py-2 rounded-lg hover:bg-cream transition-colors font-medium"
-              >
-                Login
-              </Link>
-              <Link
-                to="/login"
-                onClick={() => setMobileOpen(false)}
-                className="block px-4 py-2 rounded-full bg-primary text-white text-center font-semibold"
-              >
-                Get Started
-              </Link>
+                <Link
+                  to="/login"
+                  onClick={() => setMobileOpen(false)}
+                  className="nav-link block px-3 py-2 rounded-lg hover:bg-cream transition-colors font-medium"
+                >
+                  Login
+                </Link>
+                <Link
+                  to="/login"
+                  onClick={() => setMobileOpen(false)}
+                  className="nav-link block px-4 py-2 rounded-full bg-primary text-white text-center font-semibold"
+                >
+                  Get Started
+                </Link>
             </>
           )}
         </div>
