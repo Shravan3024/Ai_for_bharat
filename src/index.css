@@ -105,14 +105,24 @@ body {
   word-spacing: 0.1em;
 }
 
-/* High contrast mode */
-[data-theme="high-contrast"] body {
-  background-color: #000;
-  color: #fff;
+/* High contrast mode global CSS variable overrides */
+[data-theme="high-contrast"] {
+  --color-surface: #121212;
+  --color-surface-dim: #1a1a1a;
+  --color-cream: #000000;
+  --color-lavender: #0d0d0d;
+  --color-mint: #0a110a;
+  --color-sky: #0a0f14;
+  --color-text: #ffffff;
+  --color-text-secondary: #cccccc;
+  --color-text-muted: #aaaaaa;
+  --color-border: #333333;
+  --color-border-light: #222222;
 }
 
-[data-theme="high-contrast"] .bg-surface {
-  background-color: #1a1a1a;
+[data-theme="high-contrast"] body {
+  background-color: var(--color-cream);
+  color: var(--color-text);
 }
 
 /* Reduced motion */
