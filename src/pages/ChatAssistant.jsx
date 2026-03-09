@@ -1,4 +1,5 @@
 import { useState, useRef, useEffect } from "react";
+import ReactMarkdown from "react-markdown";
 import { useAuthStore } from "../stores/authStore";
 import { apiService } from "../services/apiService";
 import Navbar from "../components/Navbar";
@@ -218,7 +219,13 @@ function MessageBubble({ msg, onSpeak }) {
               : "bg-primary text-white rounded-tr-none"
           }`}
         >
-          {msg.content}
+          {isBot ? (
+            <ReactMarkdown className="prose prose-sm max-w-none text-text">
+              {msg.content}
+            </ReactMarkdown>
+          ) : (
+            msg.content
+          )}
         </div>
 
         {/* Speak button (bot messages only) */}
