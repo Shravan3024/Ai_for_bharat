@@ -125,15 +125,15 @@ export default function Settings() {
               </div>
               <button
                 onClick={toggleHighContrast}
-                className={`relative w-14 h-8 rounded-full transition-colors ${
+                className={`relative w-12 h-6 rounded-full transition-colors flex items-center px-1 ${
                   highContrast ? "bg-primary" : "bg-border"
                 }`}
                 role="switch"
                 aria-checked={highContrast}
               >
                 <span
-                  className={`absolute top-1 w-6 h-6 rounded-full bg-white shadow transition-transform ${
-                    highContrast ? "translate-x-7" : "translate-x-1"
+                  className={`w-4 h-4 rounded-full bg-white shadow transition-transform ${
+                    highContrast ? "translate-x-6" : "translate-x-0"
                   }`}
                 />
               </button>
@@ -149,15 +149,15 @@ export default function Settings() {
                 </div>
                 <button
                   onClick={toggleAudio}
-                  className={`relative w-14 h-8 rounded-full transition-colors ${
+                  className={`relative w-12 h-6 rounded-full transition-colors flex items-center px-1 ${
                     audioEnabled ? "bg-success" : "bg-border"
                   }`}
                   role="switch"
                   aria-checked={audioEnabled}
                 >
                   <span
-                    className={`absolute top-1 w-6 h-6 rounded-full bg-white shadow transition-transform ${
-                      audioEnabled ? "translate-x-7" : "translate-x-1"
+                    className={`w-4 h-4 rounded-full bg-white shadow transition-transform ${
+                      audioEnabled ? "translate-x-6" : "translate-x-0"
                     }`}
                   />
                 </button>
@@ -176,15 +176,15 @@ export default function Settings() {
                 </div>
                 <button
                   onClick={toggleDyslexicFont}
-                  className={`relative w-14 h-8 rounded-full transition-colors ${
+                  className={`relative w-12 h-6 rounded-full transition-colors flex items-center px-1 ${
                     dyslexicFont ? "bg-secondary" : "bg-border"
                   }`}
                   role="switch"
                   aria-checked={dyslexicFont}
                 >
                   <span
-                    className={`absolute top-1 w-6 h-6 rounded-full bg-white shadow transition-transform ${
-                      dyslexicFont ? "translate-x-7" : "translate-x-1"
+                    className={`w-4 h-4 rounded-full bg-white shadow transition-transform ${
+                      dyslexicFont ? "translate-x-6" : "translate-x-0"
                     }`}
                   />
                 </button>
